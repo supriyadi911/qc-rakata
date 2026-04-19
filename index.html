@@ -1,0 +1,2006 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Count Pemilu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (Excel Export) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Toast */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast { transition: all 0.3s ease-in-out; transform: translateY(100%); opacity: 0; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* Hide Scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="glass sticky top-0 z-50 border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-chart-pie text-blue-600 text-2xl mr-3"></i>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight" id="nav-title">Quick Count</h1>
+                        <p class="text-xs text-slate-500" id="nav-subtitle">Lembaga Survei</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="btn-fullscreen" class="text-slate-500 hover:text-blue-600 transition" onclick="toggleFullScreen()">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <a href="#/" class="text-sm font-medium text-slate-600 hover:text-blue-600" id="link-public">Publik</a>
+                    <a href="#/admin" class="text-sm font-medium text-slate-600 hover:text-blue-600" id="link-admin">
+                        <i class="fas fa-lock mr-1 text-xs"></i>Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="app-content" class="pb-20"></main>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container" class="flex flex-col gap-2"></div>
+
+    <!-- TEMPLATES -->
+
+    <!-- 1. PUBLIC DASHBOARD TEMPLATE -->
+    <template id="tpl-dashboard">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            
+            <!-- Header Status -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-blue-600 text-white p-6 rounded-xl shadow-lg">
+                <div>
+                    <h2 class="text-2xl font-bold" id="dash-title">Loading...</h2>
+                    <p class="text-blue-100 mt-1"><i class="fas fa-building mr-2"></i><span id="dash-lembaga">...</span></p>
+                </div>
+                <div class="text-right w-full md:w-auto">
+                    <p class="text-sm text-blue-100 mb-1">Data Masuk</p>
+                    <div class="flex items-center justify-end gap-3">
+                        <div class="w-48 bg-blue-800 rounded-full h-3 overflow-hidden">
+                            <div id="dash-progress-bar" class="bg-green-400 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <span class="text-2xl font-bold" id="dash-progress-text">0.00%</span>
+                    </div>
+                    <p class="text-xs text-blue-200 mt-1">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="card p-4 flex items-center gap-4 border-l-4 border-blue-500">
+                    <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i class="fas fa-users text-xl"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Suara</p>
+                        <p class="text-xl font-bold" id="dash-total-suara">0</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-4 border-l-4 border-green-500">
+                    <div class="bg-green-50 p-3 rounded-lg text-green-600"><i class="fas fa-check-circle text-xl"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Partisipasi (VTO)</p>
+                        <p class="text-xl font-bold" id="dash-vto">0.00%</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-4 border-l-4 border-amber-500">
+                    <div class="bg-amber-50 p-3 rounded-lg text-amber-600"><i class="fas fa-balance-scale text-xl"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Margin of Error</p>
+                        <p class="text-xl font-bold" id="dash-moe">±0.00%</p>
+                    </div>
+                </div>
+                <div class="card p-4 flex items-center gap-4 border-l-4 border-purple-500">
+                    <div class="bg-purple-50 p-3 rounded-lg text-purple-600"><i class="fas fa-bullseye text-xl"></i></div>
+                    <div>
+                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Confidence Level</p>
+                        <p class="text-xl font-bold" id="dash-cl">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candidates Grid -->
+            <div id="dash-candidates" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated via JS -->
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="card p-5 lg:col-span-1">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="font-bold text-slate-700">Perolehan Suara</h3>
+                        <button onclick="toggleVisibility('chart-bar-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                    <div id="chart-bar-container" class="relative h-64 hidden">
+                        <canvas id="chart-bar"></canvas>
+                    </div>
+                </div>
+                <div class="card p-5 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="font-bold text-slate-700">Tren Suara Masuk (Waktu)</h3>
+                        <button onclick="toggleVisibility('chart-line-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                    <div id="chart-line-container" class="relative h-64 hidden">
+                        <canvas id="chart-line"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Region Table -->
+            <div class="card p-5 overflow-hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-2 gap-2">
+                    <h3 class="font-bold text-slate-700">Sebaran Suara per Wilayah</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleVisibility('table-region-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        <button onclick="exportToExcel()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+                <div id="table-region-container" class="overflow-x-auto hidden">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b">
+                            <tr id="table-head-row">
+                                <th class="py-3 px-4">Wilayah</th>
+                                <th class="py-3 px-4 text-center">TPS Masuk</th>
+                                <th class="py-3 px-4 text-center">Data Masuk (%)</th>
+                                <th class="py-3 px-4 text-center">VTO (%)</th>
+                                <!-- Dynamic paslon headers -->
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="divide-y divide-slate-100">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="text-center text-xs text-slate-400 mt-8">
+                <p>Update Terakhir: <span id="dash-last-update">-</span></p>
+                <p class="mt-1">Auto-refresh aktif <i class="fas fa-circle text-green-500 text-[8px] animate-pulse ml-1"></i></p>
+            </div>
+        </div>
+    </template>
+
+    <!-- 2. LOGIN TEMPLATE -->
+    <template id="tpl-login">
+        <div class="min-h-[80vh] flex items-center justify-center px-4">
+            <div class="card max-w-md w-full p-8 text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-lock text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Login Admin</h2>
+                <p class="text-slate-500 text-sm mb-6">Silakan masukkan password untuk mengakses panel pengelola data.</p>
+                
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="mb-4 text-left">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input type="password" id="login-password" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="Password (default: admin123)" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition shadow-md hover:shadow-lg">
+                        Masuk Panel Admin
+                    </button>
+                </form>
+            </div>
+        </div>
+    </template>
+
+    <!-- 3. ADMIN PANEL TEMPLATE -->
+    <template id="tpl-admin">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-6">
+            
+            <!-- Sidebar -->
+            <div class="w-full md:w-64 shrink-0">
+                <div class="card p-4 sticky top-24">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                        <div class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800 leading-tight">Administrator</p>
+                            <p class="text-xs text-slate-500">Panel Pengelola</p>
+                        </div>
+                    </div>
+                    
+                    <nav class="space-y-1" id="admin-nav">
+                        <button onclick="switchAdminTab('input')" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md bg-blue-50 text-blue-700 admin-tab-btn" data-target="input">
+                            <i class="fas fa-keyboard w-5"></i> Input Suara
+                        </button>
+                        <button onclick="switchAdminTab('paslon')" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-50 hover:text-slate-900 admin-tab-btn" data-target="paslon">
+                            <i class="fas fa-users w-5"></i> Kelola Paslon
+                        </button>
+                        <button onclick="switchAdminTab('wilayah')" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-50 hover:text-slate-900 admin-tab-btn" data-target="wilayah">
+                            <i class="fas fa-map-marked-alt w-5"></i> Data Wilayah
+                        </button>
+                        <button onclick="switchAdminTab('pengaturan')" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-slate-600 hover:bg-slate-50 hover:text-slate-900 admin-tab-btn" data-target="pengaturan">
+                            <i class="fas fa-cog w-5"></i> Pengaturan
+                        </button>
+                        <div class="pt-4 mt-4 border-t border-slate-100">
+                            <button onclick="logout()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-red-600 hover:bg-red-50">
+                                <i class="fas fa-sign-out-alt w-5"></i> Keluar
+                            </button>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="flex-1 space-y-6">
+                <!-- Status Bar -->
+                <div class="card p-4 flex justify-between items-center bg-slate-800 text-white">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Status Koneksi</span>
+                        <div class="flex items-center gap-2">
+                            <div id="conn-indicator" class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                            <span id="conn-text" class="font-medium text-sm">Local Storage (Offline Mode)</span>
+                        </div>
+                    </div>
+                    <button onclick="syncData()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-sm transition flex items-center gap-2">
+                        <i class="fas fa-sync-alt" id="sync-icon"></i> Refresh Data
+                    </button>
+                </div>
+
+                <!-- Tab: Input Suara -->
+                <div id="tab-input" class="admin-tab-content block">
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 class="text-lg font-bold text-slate-800">Entry Data TPS</h3>
+                            <button type="button" onclick="syncSuaraToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                            </button>
+                        </div>
+                        <form id="form-input-suara" onsubmit="submitSuara(event)" class="space-y-4">
+                            <input type="hidden" id="suara-id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Wilayah</label>
+                                    <select id="input-wilayah" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                        <!-- Populated -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nomor TPS</label>
+                                    <select id="input-tps" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                        <option value="">-- Pilih TPS --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <h4 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Perolehan Suara Paslon</h4>
+                                <div id="input-paslon-container" class="space-y-3">
+                                    <!-- Populated dynamically based on paslon -->
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Suara Tidak Sah</label>
+                                    <input type="number" id="input-suara-tidak-sah" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" required min="0">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Total Pemilih Terdaftar (DPT)</label>
+                                    <input type="number" id="input-dpt" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" required min="0">
+                                </div>
+                            </div>
+
+                            <div class="pt-2 flex gap-2">
+                                <button type="button" onclick="resetFormSuara()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium" id="btn-cancel-suara">Batal</button>
+                                <button type="submit" id="btn-save-suara" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition flex items-center">
+                                    <i class="fas fa-save mr-2"></i> Simpan Data Suara
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Recent Inputs -->
+                    <div class="card p-6 mt-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
+                            <h3 class="text-sm font-bold text-slate-800">Data Suara Masuk</h3>
+                            <button type="button" id="btn-bulk-delete-suara" onclick="bulkDeleteSuara()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-sm font-medium transition hidden items-center gap-1">
+                                <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-suara-count">0</span>)
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto max-h-96 overflow-y-auto border border-slate-200 rounded-lg relative">
+                            <table class="w-full text-left text-sm text-slate-600">
+                                <thead class="bg-slate-50 text-slate-700 font-semibold border-b sticky top-0 z-10 shadow-sm">
+                                    <tr>
+                                        <th class="py-2 px-3 w-10 text-center"><input type="checkbox" id="selectAllSuara" onchange="toggleSelectAllSuara(this)" class="rounded text-blue-600 cursor-pointer"></th>
+                                        <th class="py-2 px-3">Waktu</th>
+                                        <th class="py-2 px-3">Wilayah / TPS</th>
+                                        <th class="py-2 px-3">Total Sah</th>
+                                        <th class="py-2 px-3 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-recent-suara" class="divide-y divide-slate-100 bg-white">
+                                    <!-- Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Kelola Paslon -->
+                <div id="tab-paslon" class="admin-tab-content hidden space-y-6">
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 class="text-lg font-bold text-slate-800">Daftar Pasangan Calon</h3>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="syncPaslonToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                    <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                                </button>
+                                <button onclick="openModalPaslon()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                    <i class="fas fa-plus"></i> Tambah
+                                </button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="admin-paslon-list">
+                            <!-- Populated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Data Wilayah -->
+                <div id="tab-wilayah" class="admin-tab-content hidden space-y-6">
+                     <div class="card p-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
+                            <h3 class="text-lg font-bold text-slate-800">Manajemen Wilayah</h3>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="syncWilayahToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                    <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                                </button>
+                                <button type="button" onclick="document.getElementById('import-wilayah-file').click()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2">
+                                    <i class="fas fa-file-import"></i> Import Excel
+                                </button>
+                                <button type="button" onclick="downloadTemplateWilayah()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2">
+                                    <i class="fas fa-file-excel"></i> Template Excel
+                                </button>
+                                <input type="file" id="import-wilayah-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleImportWilayah(event)">
+                                <button type="button" id="btn-bulk-delete-wilayah" onclick="bulkDeleteWilayah()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-sm font-medium transition hidden items-center gap-1">
+                                    <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-count">0</span>)
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <form id="form-wilayah" onsubmit="saveWilayah(event)" class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+                            <input type="hidden" id="wilayah-id">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kabupaten/Kota</label>
+                                    <input type="text" id="wilayah-kabupaten" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Jakarta Selatan" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kecamatan</label>
+                                    <input type="text" id="wilayah-kecamatan" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Kebayoran Baru" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kelurahan/Desa</label>
+                                    <input type="text" id="wilayah-kelurahan" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Senayan" required>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Daftar TPS Terpilih (Pisahkan dengan Koma)</label>
+                                    <input type="text" id="wilayah-tps-terpilih" onkeyup="calculateTargetTPS()" onchange="calculateTargetTPS()" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: 01, 04, 12">
+                                    <p class="text-[10px] text-slate-500 mt-1">Isi jika ini adalah TPS Sampel. Target TPS akan terhitung otomatis.</p>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Target TPS</label>
+                                    <input type="number" id="wilayah-target" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors" placeholder="Contoh: 100" min="0">
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" onclick="resetFormWilayah()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium" id="btn-cancel-wilayah">Batal</button>
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2" id="btn-save-wilayah">
+                                    <i class="fas fa-plus"></i> Tambah Wilayah
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                            <table class="w-full text-left text-sm text-slate-600">
+                                <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-3 px-4 w-10 text-center"><input type="checkbox" id="selectAllWilayah" onchange="toggleSelectAllWilayah(this)" class="rounded text-blue-600 cursor-pointer"></th>
+                                        <th class="py-3 px-4">Kabupaten/Kota</th>
+                                        <th class="py-3 px-4">Kecamatan</th>
+                                        <th class="py-3 px-4">Kelurahan/Desa</th>
+                                        <th class="py-3 px-4">TPS Terpilih</th>
+                                        <th class="py-3 px-4 text-center">Target TPS</th>
+                                        <th class="py-3 px-4 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-wilayah-list" class="divide-y divide-slate-100 bg-white">
+                                    <!-- Populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Pengaturan -->
+                <div id="tab-pengaturan" class="admin-tab-content hidden space-y-6">
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 class="text-lg font-bold text-slate-800">Pengaturan Umum</h3>
+                            <button type="button" onclick="syncPengaturanToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                            </button>
+                        </div>
+                        <form id="form-pengaturan" onsubmit="savePengaturan(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Judul Aplikasi</label>
+                                    <input type="text" id="set-judul" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Lembaga</label>
+                                    <input type="text" id="set-lembaga" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Target Total TPS</label>
+                                    <input type="number" id="set-tps" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Margin of Error (%)</label>
+                                        <input type="number" step="0.1" id="set-moe" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Confidence Level (%)</label>
+                                        <input type="number" id="set-cl" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4 border-slate-200">
+                            <h4 class="text-sm font-bold text-slate-700 mb-2">Integrasi Backend</h4>
+                            <p class="text-xs text-slate-500 mb-3">Masukkan URL Google Apps Script Web App Anda di sini untuk mode online. Kosongkan untuk mode Offline/Demo (Data disimpan di browser).</p>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Google Apps Script URL (API)</label>
+                                <input type="url" id="set-api" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="https://script.google.com/macros/s/.../exec">
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100">
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition w-full md:w-auto">
+                                    Simpan Pengaturan
+                                </button>
+                                <button type="button" onclick="factoryReset()" class="mt-4 md:mt-0 md:ml-2 bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-lg font-medium transition w-full md:w-auto">
+                                    Reset Data (Demo)
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal Paslon -->
+    <div id="modal-paslon" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800" id="modal-paslon-title">Tambah Paslon</h3>
+                <button onclick="closeModalPaslon()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <form id="form-paslon" onsubmit="savePaslon(event)" class="p-6 space-y-4">
+                <input type="hidden" id="paslon-id">
+                <div class="flex gap-4">
+                    <div class="w-1/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nomor</label>
+                        <input type="number" id="paslon-nomor" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="w-2/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Warna Chart</label>
+                        <input type="color" id="paslon-warna" class="w-full h-[42px] px-1 py-1 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Nama Pasangan Calon</label>
+                    <input type="text" id="paslon-nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">URL Foto (Opsional)</label>
+                    <input type="url" id="paslon-foto" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                    <p class="text-xs text-slate-500 mt-1">Gunakan URL gambar publik. Jika kosong, akan menggunakan placeholder.</p>
+                </div>
+                <div class="pt-4 flex justify-end gap-2">
+                    <button type="button" onclick="closeModalPaslon()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Custom -->
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all text-center p-6">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-800 mb-2" id="modal-confirm-title">Konfirmasi</h3>
+            <p class="text-sm text-slate-500 mb-6" id="modal-confirm-msg">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+            <div class="flex justify-center gap-3">
+                <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium w-full border border-slate-200">Batal</button>
+                <button type="button" id="btn-confirm-action" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium w-full shadow-sm">Ya, Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ====================================================================
+           1. STATE & DATA INITIALIZATION
+           ==================================================================== */
+        
+        // Initial / Default Dummy Data for seamless Canvas Preview
+        const DEFAULT_DATA = {
+            pengaturan: {
+                judul: "Quick Count Pemilihan Gubernur 2026",
+                lembaga: "Lembaga Survei Mandiri Indonesia",
+                total_tps: 5000,
+                margin_error: 1.5,
+                confidence_level: 95,
+                api_url: "https://script.google.com/macros/s/AKfycbyttWURe_jAV9LKZMV8i5tMdjKQolg7W0XDRyzkX1MBKScM7eLoX3rd4F4F3r37KB4a/exec" // URL Default yang otomatis tersinkron
+            },
+            paslon: [
+                { id: "p1", nomor: 1, nama: "Budi Santoso - Ani Yudhoyono", foto_url: "https://ui-avatars.com/api/?name=1&background=0D8ABC&color=fff&size=150&font-size=0.6", warna: "#3b82f6" },
+                { id: "p2", nomor: 2, nama: "Agus Harimurti - Puan Maharani", foto_url: "https://ui-avatars.com/api/?name=2&background=EF4444&color=fff&size=150&font-size=0.6", warna: "#ef4444" },
+                { id: "p3", nomor: 3, nama: "Ridwan Kamil - Sandiaga Uno", foto_url: "https://ui-avatars.com/api/?name=3&background=EAB308&color=fff&size=150&font-size=0.6", warna: "#eab308" }
+            ],
+            wilayah: [
+                { id: "w1", kabupaten: "Jakarta Pusat", kecamatan: "Menteng", kelurahan: "Menteng", nama: "Menteng, Menteng, Jakarta Pusat", tps_terpilih: "01, 02, 03", target_tps: 3 },
+                { id: "w2", kabupaten: "Jakarta Selatan", kecamatan: "Kebayoran Baru", kelurahan: "Senayan", nama: "Senayan, Kebayoran Baru, Jakarta Selatan", tps_terpilih: "10, 11", target_tps: 2 },
+                { id: "w3", kabupaten: "Jakarta Timur", kecamatan: "Jatinegara", kelurahan: "Cipinang", nama: "Cipinang, Jatinegara, Jakarta Timur", tps_terpilih: "", target_tps: 100 },
+                { id: "w4", kabupaten: "Jakarta Barat", kecamatan: "Grogol Petamburan", kelurahan: "Tanjung Duren", nama: "Tanjung Duren, Grogol Petamburan, Jakarta Barat", tps_terpilih: "", target_tps: 100 },
+                { id: "w5", kabupaten: "Jakarta Utara", kecamatan: "Kelapa Gading", kelurahan: "Kelapa Gading Barat", nama: "Kelapa Gading Barat, Kelapa Gading, Jakarta Utara", tps_terpilih: "", target_tps: 100 }
+            ],
+            suara: []
+        };
+
+        // Generate dummy historical data to make charts look good on initial load
+        function generateDummySuara() {
+            let dummy = [];
+            let now = new Date();
+            let baseVotes = { p1: 100, p2: 95, p3: 80 };
+            
+            for(let i=0; i<30; i++) {
+                let time = new Date(now.getTime() - (30 - i) * 60000 * 30); // every 30 mins back
+                let w_idx = i % 5;
+                
+                let s_p1 = Math.floor(Math.random() * 50) + baseVotes.p1;
+                let s_p2 = Math.floor(Math.random() * 50) + baseVotes.p2;
+                let s_p3 = Math.floor(Math.random() * 50) + baseVotes.p3;
+                let s_tidak_sah = Math.floor(Math.random() * 10);
+                let total = s_p1 + s_p2 + s_p3;
+                let dpt = total + s_tidak_sah + Math.floor(Math.random() * 50);
+
+                dummy.push({
+                    id: "s_" + time.getTime(),
+                    wilayah: DEFAULT_DATA.wilayah[w_idx].id,
+                    tps: "0" + (i+1),
+                    suara_1: s_p1,
+                    suara_2: s_p2,
+                    suara_3: s_p3,
+                    suara_tidak_sah: s_tidak_sah,
+                    total_pemilih: dpt,
+                    waktu: time.toISOString()
+                });
+            }
+            return dummy;
+        }
+
+        let appData = { pengaturan: {}, paslon: [], wilayah: [], suara: [], lastUpdate: null };
+        let charts = { bar: null, line: null };
+        let refreshInterval = null;
+        let isOnline = false;
+
+        /* ====================================================================
+           2. CORE FUNCTIONS (Storage, API)
+           ==================================================================== */
+        
+        async function loadData() {
+            showToast("Memuat data...", "info");
+            
+            // Cek LocalStorage dulu
+            let localStr = localStorage.getItem('qc_data');
+            if (!localStr) {
+                // Seed default
+                DEFAULT_DATA.suara = generateDummySuara();
+                localStorage.setItem('qc_data', JSON.stringify(DEFAULT_DATA));
+                localStr = JSON.stringify(DEFAULT_DATA);
+            }
+            
+            appData = JSON.parse(localStr);
+            isOnline = false;
+
+            // Memaksa pengisian API Default jika data lokal sebelumnya kosong (berguna untuk sesi browser yang sudah telanjur tersimpan tanpa URL API)
+            if (!appData.pengaturan.api_url || appData.pengaturan.api_url.trim() === "") {
+                appData.pengaturan.api_url = DEFAULT_DATA.pengaturan.api_url;
+                localStorage.setItem('qc_data', JSON.stringify(appData));
+            }
+
+            // Jika ada API URL, timpa dengan data dari server
+            if (appData.pengaturan.api_url && appData.pengaturan.api_url.trim() !== "") {
+                let currentApiUrl = appData.pengaturan.api_url; // Simpan URL API secara lokal sebelum data ditimpa oleh server
+                
+                try {
+                    const res = await fetch(appData.pengaturan.api_url + "?action=getAll");
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        appData = data.data;
+                        appData.pengaturan.api_url = currentApiUrl; // Kembalikan URL API ke dalam pengaturan agar tidak terhapus
+                        localStorage.setItem('qc_data', JSON.stringify(appData)); // Cache
+                        isOnline = true;
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (e) {
+                    console.error("API Fetch Error:", e);
+                    showToast("Gagal mengambil data dari server. Menggunakan data lokal.", "error");
+                }
+            }
+            
+            appData.lastUpdate = new Date();
+            updateAppUI();
+            showToast("Data berhasil dimuat", "success");
+        }
+
+        async function saveData() {
+            // Save to LocalStorage immediately
+            localStorage.setItem('qc_data', JSON.stringify(appData));
+        }
+
+        function syncData() {
+            document.getElementById('sync-icon').classList.add('animate-spin');
+            loadData().then(() => {
+                setTimeout(() => document.getElementById('sync-icon').classList.remove('animate-spin'), 500);
+            });
+        }
+
+        /* ====================================================================
+           3. ROUTING & RENDERING
+           ==================================================================== */
+        
+        function handleRouting() {
+            const hash = window.location.hash || '#/';
+            const content = document.getElementById('app-content');
+            
+            // Clear interval
+            if (refreshInterval) clearInterval(refreshInterval);
+
+            // Update Nav links
+            document.getElementById('link-public').classList.toggle('text-blue-600', hash === '#/');
+            document.getElementById('link-admin').classList.toggle('text-blue-600', hash === '#/admin' || hash === '#/admin-panel');
+
+            if (hash === '#/') {
+                // PUBLIC DASHBOARD
+                const tpl = document.getElementById('tpl-dashboard').content.cloneNode(true);
+                content.innerHTML = '';
+                content.appendChild(tpl);
+                updateDashboardUI();
+                // Auto refresh every 10s
+                refreshInterval = setInterval(() => {
+                    if (isOnline) loadData(); else updateDashboardUI();
+                }, 10000);
+            } 
+            else if (hash === '#/admin') {
+                // ADMIN LOGIN
+                if (sessionStorage.getItem('qc_admin_logged') === 'true') {
+                    window.location.hash = '#/admin-panel';
+                    return;
+                }
+                const tpl = document.getElementById('tpl-login').content.cloneNode(true);
+                content.innerHTML = '';
+                content.appendChild(tpl);
+            }
+            else if (hash === '#/admin-panel') {
+                // ADMIN PANEL
+                if (sessionStorage.getItem('qc_admin_logged') !== 'true') {
+                    window.location.hash = '#/admin';
+                    return;
+                }
+                const tpl = document.getElementById('tpl-admin').content.cloneNode(true);
+                content.innerHTML = '';
+                content.appendChild(tpl);
+                updateAdminUI();
+                switchAdminTab('input'); // Default tab
+            }
+        }
+
+        window.addEventListener('hashchange', handleRouting);
+
+        /* ====================================================================
+           4. PUBLIC DASHBOARD LOGIC
+           ==================================================================== */
+
+        function updateAppUI() {
+            // Global Updates (Nav)
+            if (appData.pengaturan) {
+                document.getElementById('nav-title').innerText = appData.pengaturan.judul || "Quick Count";
+                document.getElementById('nav-subtitle').innerText = appData.pengaturan.lembaga || "";
+            }
+
+            // Route specific updates
+            const hash = window.location.hash || '#/';
+            if (hash === '#/') updateDashboardUI();
+            if (hash === '#/admin-panel') updateAdminUI();
+        }
+
+        function calculateStats() {
+            let totalSuaraMasuk = 0;
+            let totalSuaraTidakSah = 0;
+            let totalPemilihMasuk = 0;
+            let tpsMasuk = appData.suara.length;
+            
+            // Hitung suara per paslon
+            let perolehan = {};
+            appData.paslon.forEach(p => perolehan[p.id] = 0);
+
+            appData.suara.forEach(s => {
+                let sTotal = 0;
+                appData.paslon.forEach(p => {
+                    let v = parseInt(s["suara_" + p.nomor]) || 0;
+                    perolehan[p.id] += v;
+                    sTotal += v;
+                });
+                totalSuaraMasuk += sTotal;
+                totalSuaraTidakSah += parseInt(s.suara_tidak_sah) || 0;
+                totalPemilihMasuk += parseInt(s.total_pemilih) || sTotal;
+            });
+
+            // Persentase
+            let hasil = appData.paslon.map(p => {
+                let v = perolehan[p.id];
+                let pct = totalSuaraMasuk > 0 ? ((v / totalSuaraMasuk) * 100).toFixed(2) : 0;
+                return { ...p, suara: v, persentase: parseFloat(pct) };
+            });
+
+            // Urutkan berdasarkan nomor urut paslon
+            hasil.sort((a, b) => a.nomor - b.nomor);
+
+            // VTO = (Total Suara Sah + Suara Tidak Sah) / Total Pemilih (DPT)
+            let totalSuaraKeseluruhan = totalSuaraMasuk + totalSuaraTidakSah;
+            let vto = totalPemilihMasuk > 0 ? ((totalSuaraKeseluruhan / totalPemilihMasuk) * 100).toFixed(2) : 0;
+            let progress = appData.pengaturan.total_tps > 0 ? ((tpsMasuk / appData.pengaturan.total_tps) * 100).toFixed(2) : 0;
+            if(progress > 100) progress = 100;
+
+            return {
+                totalSuara: totalSuaraMasuk,
+                tpsMasuk: tpsMasuk,
+                progress: parseFloat(progress),
+                vto: parseFloat(vto),
+                hasil: hasil
+            };
+        }
+
+        function updateDashboardUI() {
+            if(!document.getElementById('dash-title')) return; // Not on dashboard
+
+            const stats = calculateStats();
+            const set = appData.pengaturan;
+
+            // Update Header
+            document.getElementById('dash-title').innerText = set.judul;
+            document.getElementById('dash-lembaga').innerText = set.lembaga;
+            
+            // Animations for numbers
+            animateValue('dash-total-suara', parseInt(document.getElementById('dash-total-suara').innerText.replace(/,/g,'')), stats.totalSuara, 1000, true);
+            
+            document.getElementById('dash-tps-masuk').innerText = stats.tpsMasuk.toLocaleString('id-ID');
+            document.getElementById('dash-tps-total').innerText = (parseInt(set.total_tps) || 0).toLocaleString('id-ID');
+            document.getElementById('dash-progress-bar').style.width = stats.progress + '%';
+            document.getElementById('dash-progress-text').innerText = stats.progress + '%';
+            
+            document.getElementById('dash-vto').innerText = stats.vto + '%';
+            document.getElementById('dash-moe').innerText = '±' + (set.margin_error || 0) + '%';
+            document.getElementById('dash-cl').innerText = (set.confidence_level || 0) + '%';
+            
+            if(appData.lastUpdate) {
+                let d = new Date(appData.lastUpdate);
+                document.getElementById('dash-last-update').innerText = d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID');
+            }
+
+            // Render Candidates Grid
+            const candContainer = document.getElementById('dash-candidates');
+            candContainer.innerHTML = '';
+            
+            // Cari suara tertinggi untuk menandai pemenang sementara
+            let maxSuara = Math.max(...stats.hasil.map(h => h.suara));
+
+            stats.hasil.forEach((h, index) => {
+                let isWinner = (h.suara === maxSuara && maxSuara > 0);
+                let card = document.createElement('div');
+                card.className = `card overflow-hidden relative ${isWinner ? 'ring-2 ring-amber-400' : ''}`;
+                card.innerHTML = `
+                    ${isWinner ? '<div class="absolute top-0 right-0 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10"><i class="fas fa-crown mr-1"></i> Unggul</div>' : ''}
+                    <div class="h-2 w-full" style="background-color: ${h.warna}"></div>
+                    <div class="p-5 flex items-center gap-4">
+                        <img src="${h.foto_url || 'https://ui-avatars.com/api/?name='+h.nomor+'&background=random'}" alt="${h.nama}" class="w-20 h-20 rounded-xl object-cover shadow-sm border-2 border-slate-100">
+                        <div class="flex-1">
+                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wide">Nomor ${h.nomor}</span>
+                            <h4 class="font-bold text-slate-800 leading-tight mt-1 mb-2">${h.nama}</h4>
+                            <div class="flex items-end justify-between">
+                                <span class="text-2xl font-black" style="color: ${h.warna}">${h.persentase}%</span>
+                                <span class="text-xs text-slate-500 font-medium">${h.suara.toLocaleString('id-ID')} suara</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                candContainer.appendChild(card);
+            });
+
+            // Update Charts
+            renderCharts(stats.hasil);
+            
+            // Update Table
+            renderTable();
+        }
+
+        function renderCharts(hasil) {
+            // Prepare Data for Bar Chart
+            const labels = hasil.map(h => '0' + h.nomor + '. ' + h.nama.split(' ')[0]);
+            const dataPcts = hasil.map(h => h.persentase);
+            const bgColors = hasil.map(h => h.warna);
+
+            // BAR CHART
+            const ctxBar = document.getElementById('chart-bar').getContext('2d');
+            if(charts.bar) charts.bar.destroy();
+            charts.bar = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataPcts,
+                        backgroundColor: bgColors,
+                        borderRadius: 6,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw + '%' } } },
+                    scales: { y: { beginAtZero: true, max: 100, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } },
+                    animation: { duration: 1000 }
+                }
+            });
+
+            // LINE CHART (Trend)
+            // Group data by time (simplified: sorting by time and creating cumulative points)
+            let sortedSuara = [...appData.suara].sort((a,b) => new Date(a.waktu) - new Date(b.waktu));
+            
+            let timeLabels = [];
+            let cumulative = {};
+            appData.paslon.forEach(p => cumulative[p.id] = []);
+            
+            let currCumul = {};
+            appData.paslon.forEach(p => currCumul[p.id] = 0);
+            let totalCumul = 0;
+
+            // Limit to max 20 points for clean chart
+            let step = Math.max(1, Math.floor(sortedSuara.length / 20));
+            
+            sortedSuara.forEach((s, idx) => {
+                let totalS = 0;
+                appData.paslon.forEach(p => {
+                    let v = parseInt(s["suara_" + p.nomor]) || 0;
+                    currCumul[p.id] += v;
+                    totalCumul += v;
+                });
+
+                if(idx % step === 0 || idx === sortedSuara.length - 1) {
+                    let d = new Date(s.waktu);
+                    timeLabels.push(`${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`);
+                    appData.paslon.forEach(p => {
+                        let pct = totalCumul > 0 ? (currCumul[p.id] / totalCumul * 100).toFixed(1) : 0;
+                        cumulative[p.id].push(parseFloat(pct));
+                    });
+                }
+            });
+
+            const datasetsLine = [...appData.paslon].sort((a,b) => a.nomor - b.nomor).map(p => ({
+                label: `0${p.nomor}`,
+                data: cumulative[p.id],
+                borderColor: p.warna,
+                backgroundColor: p.warna + '20',
+                borderWidth: 2,
+                pointRadius: 2,
+                fill: true,
+                tension: 0.3
+            }));
+
+            const ctxLine = document.getElementById('chart-line').getContext('2d');
+            if(charts.line) charts.line.destroy();
+            charts.line = new Chart(ctxLine, {
+                type: 'line',
+                data: { labels: timeLabels, datasets: datasetsLine },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: true, max: 100, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } },
+                    interaction: { mode: 'index', intersect: false }
+                }
+            });
+        }
+
+        function renderTable() {
+            const headRow = document.getElementById('table-head-row');
+            const tbody = document.getElementById('table-body');
+            
+            // Construct Headers
+            let headersHTML = `
+                <th class="py-3 px-4">Kecamatan</th>
+                <th class="py-3 px-4 text-center">TPS Masuk</th>
+                <th class="py-3 px-4 text-center">Data Masuk (%)</th>
+                <th class="py-3 px-4 text-center">VTO (%)</th>
+            `;
+            appData.paslon.sort((a,b) => a.nomor - b.nomor).forEach(p => {
+                headersHTML += `<th class="py-3 px-4 text-right">0${p.nomor} (%)</th>`;
+            });
+            headRow.innerHTML = headersHTML;
+
+            // Aggregate data per Kecamatan
+            let kecData = {};
+            let wilayahToKec = {};
+            
+            appData.wilayah.forEach(w => {
+                let kab = w.kabupaten ? w.kabupaten : '-';
+                let kec = w.kecamatan ? w.kecamatan : (w.nama || '-');
+                let kecKey = `Kec. ${kec}, ${kab}`;
+                
+                wilayahToKec[w.id] = kecKey;
+
+                // Inisialisasi data kecamatan jika belum ada
+                if(!kecData[kecKey]) {
+                    kecData[kecKey] = { nama: kecKey, total: 0, tidak_sah: 0, tps: 0, dpt: 0, target_tps: 0 };
+                    appData.paslon.forEach(p => kecData[kecKey][p.id] = 0);
+                }
+                
+                // Akumulasikan target TPS dari setiap kelurahan ke tingkat kecamatan
+                kecData[kecKey].target_tps += (parseInt(w.target_tps) || 0);
+            });
+
+            appData.suara.forEach(s => {
+                let kecKey = wilayahToKec[s.wilayah];
+                if(kecKey && kecData[kecKey]) {
+                    kecData[kecKey].tps++;
+                    kecData[kecKey].dpt += parseInt(s.total_pemilih) || 0;
+                    kecData[kecKey].tidak_sah += parseInt(s.suara_tidak_sah) || 0;
+                    appData.paslon.forEach(p => {
+                        let v = parseInt(s["suara_"+p.nomor]) || 0;
+                        kecData[kecKey][p.id] += v;
+                        kecData[kecKey].total += v;
+                    });
+                }
+            });
+
+            // Render Rows
+            tbody.innerHTML = '';
+            
+            // Convert ke array dan urutkan sesuai abjad nama kecamatan
+            let sortedKec = Object.values(kecData).sort((a,b) => a.nama.localeCompare(b.nama));
+            
+            sortedKec.forEach(d => {
+                if(d.total === 0 && d.tps === 0 && d.target_tps === 0) return; // Skip empty
+                
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                
+                let progress = d.target_tps > 0 ? ((d.tps / d.target_tps) * 100).toFixed(2) : 0;
+                if(progress > 100) progress = 100;
+                
+                // VTO = (Total Suara Sah + Total Suara Tidak Sah) / DPT
+                let totalSuaraCast = d.total + d.tidak_sah;
+                let vto = d.dpt > 0 ? ((totalSuaraCast / d.dpt) * 100).toFixed(2) : 0;
+
+                let html = `
+                    <td class="py-3 px-4 font-medium text-slate-800">${d.nama}</td>
+                    <td class="py-3 px-4 text-center"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">${d.tps} TPS</span></td>
+                    <td class="py-3 px-4 text-center font-medium">${d.target_tps > 0 ? progress + '%' : '-'}</td>
+                    <td class="py-3 px-4 text-center font-medium text-green-600">${vto}%</td>
+                `;
+                
+                appData.paslon.forEach(p => {
+                    let pct = d.total > 0 ? ((d[p.id] / d.total) * 100).toFixed(2) : 0;
+                    html += `<td class="py-3 px-4 text-right font-semibold" style="color: ${p.warna}">${pct}%</td>`;
+                });
+                
+                tr.innerHTML = html;
+                tbody.appendChild(tr);
+            });
+        }
+
+        /* ====================================================================
+           5. ADMIN PANEL LOGIC
+           ==================================================================== */
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const pass = document.getElementById('login-password').value;
+            // Simple hardcoded auth for demo
+            if(pass === 'admin123') {
+                sessionStorage.setItem('qc_admin_logged', 'true');
+                showToast('Login berhasil', 'success');
+                window.location.hash = '#/admin-panel';
+            } else {
+                showToast('Password salah!', 'error');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('qc_admin_logged');
+            window.location.hash = '#/';
+            showToast('Anda telah keluar', 'info');
+        }
+
+        function switchAdminTab(tabId) {
+            // Hide all
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active classes
+            document.querySelectorAll('.admin-tab-btn').forEach(el => {
+                el.classList.remove('bg-blue-50', 'text-blue-700');
+                el.classList.add('text-slate-600');
+            });
+            
+            // Show target
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            // Add active class
+            let btn = document.querySelector(`.admin-tab-btn[data-target="${tabId}"]`);
+            if(btn) {
+                btn.classList.remove('text-slate-600');
+                btn.classList.add('bg-blue-50', 'text-blue-700');
+            }
+        }
+
+        function updateAdminUI() {
+            // Connection Indicator
+            const ind = document.getElementById('conn-indicator');
+            const txt = document.getElementById('conn-text');
+            if (isOnline) {
+                ind.className = 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
+                txt.innerText = 'Online (Connected to GAS)';
+            } else {
+                ind.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
+                txt.innerText = 'Offline Mode (Local Storage)';
+            }
+
+            // 1. Populate Input Form
+            const selWilayah = document.getElementById('input-wilayah');
+            if(selWilayah) {
+                selWilayah.innerHTML = '<option value="">-- Pilih Wilayah --</option>';
+                appData.wilayah.forEach(w => {
+                    selWilayah.innerHTML += `<option value="${w.id}">${w.nama}</option>`;
+                });
+                
+                // Tambahkan event onchange agar saat wilayah dipilih, list TPS di sebelahnya ikut diperbarui
+                selWilayah.setAttribute('onchange', 'populateTPSDropdown()');
+                populateTPSDropdown(); // Panggil di awal untuk inisialisasi state kosong
+            }
+
+            const inputPaslon = document.getElementById('input-paslon-container');
+            if(inputPaslon) {
+                inputPaslon.innerHTML = '';
+                appData.paslon.sort((a,b) => a.nomor - b.nomor).forEach(p => {
+                    inputPaslon.innerHTML += `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm" style="background-color: ${p.warna}">
+                                0${p.nomor}
+                            </div>
+                            <div class="flex-1">
+                                <span class="text-xs text-slate-500 line-clamp-1">${p.nama}</span>
+                            </div>
+                            <div class="w-1/3">
+                                <input type="number" id="inp_suara_${p.id}" class="w-full px-3 py-1.5 border border-slate-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 text-right font-medium" placeholder="Suara Sah" required min="0">
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Data Suara Table
+            const tbodyR = document.getElementById('table-recent-suara');
+            if(tbodyR) {
+                tbodyR.innerHTML = '';
+                // Get all data, sorted by time descending (no more slice limitation)
+                let sortedSuara = [...appData.suara].sort((a,b) => new Date(b.waktu) - new Date(a.waktu));
+                sortedSuara.forEach(s => {
+                    let wNama = appData.wilayah.find(w => w.id === s.wilayah)?.nama || 'Unknown';
+                    let total = 0;
+                    appData.paslon.forEach(p => total += (parseInt(s["suara_"+p.nomor]) || 0));
+                    let d = new Date(s.waktu);
+                    let tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+                    tr.innerHTML = `
+                        <td class="py-2 px-3 text-center"><input type="checkbox" class="suara-checkbox rounded text-blue-600 cursor-pointer" value="${s.id}" onchange="updateBulkDeleteSuaraBtn()"></td>
+                        <td class="py-2 px-3 text-xs text-slate-500">${d.toLocaleDateString('id-ID')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}</td>
+                        <td class="py-2 px-3"><span class="font-medium">${wNama}</span> / TPS ${s.tps}</td>
+                        <td class="py-2 px-3 font-semibold text-blue-600">${total}</td>
+                        <td class="py-2 px-3 text-right whitespace-nowrap">
+                            <button type="button" onclick="editSuara('${s.id}')" class="text-amber-500 hover:text-amber-700 p-1 mr-1"><i class="fas fa-edit text-xs"></i></button>
+                            <button type="button" onclick="deleteSuara('${s.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt text-xs"></i></button>
+                        </td>
+                    `;
+                    tbodyR.appendChild(tr);
+                });
+
+                const selectAllSuara = document.getElementById('selectAllSuara');
+                if (selectAllSuara) selectAllSuara.checked = false;
+                if (typeof updateBulkDeleteSuaraBtn === 'function') updateBulkDeleteSuaraBtn();
+            }
+
+            // 2. Populate Pengaturan
+            if(document.getElementById('set-judul')) {
+                document.getElementById('set-judul').value = appData.pengaturan.judul || '';
+                document.getElementById('set-lembaga').value = appData.pengaturan.lembaga || '';
+                document.getElementById('set-tps').value = appData.pengaturan.total_tps || 0;
+                document.getElementById('set-moe').value = appData.pengaturan.margin_error || 0;
+                document.getElementById('set-cl').value = appData.pengaturan.confidence_level || 0;
+                document.getElementById('set-api').value = appData.pengaturan.api_url || '';
+            }
+
+            // 3. Populate Paslon List
+            const pList = document.getElementById('admin-paslon-list');
+            if(pList) {
+                pList.innerHTML = '';
+                appData.paslon.sort((a,b) => a.nomor - b.nomor).forEach(p => {
+                    pList.innerHTML += `
+                        <div class="border border-slate-200 rounded-lg p-3 flex flex-col gap-3 relative">
+                            <div class="flex gap-3 items-center">
+                                <img src="${p.foto_url || 'https://ui-avatars.com/api/?name='+p.nomor}" class="w-12 h-12 rounded-lg object-cover border-2" style="border-color:${p.warna}">
+                                <div class="flex-1">
+                                    <span class="text-xs font-bold text-white px-2 py-0.5 rounded uppercase" style="background:${p.warna}">No. ${p.nomor}</span>
+                                    <p class="font-semibold text-sm mt-1 leading-tight text-slate-800">${p.nama}</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2 border-t border-slate-100 pt-2 mt-1">
+                                <button type="button" onclick="editPaslon('${p.id}')" class="text-xs bg-amber-50 text-amber-600 hover:bg-amber-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium"><i class="fas fa-edit"></i> Edit</button>
+                                <button type="button" onclick="deletePaslon('${p.id}')" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium"><i class="fas fa-trash"></i> Hapus</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 4. Populate Wilayah List
+            const wList = document.getElementById('admin-wilayah-list');
+            if(wList) {
+                wList.innerHTML = '';
+                appData.wilayah.forEach(w => {
+                    let kab = w.kabupaten || '-';
+                    let kec = w.kecamatan || '-';
+                    let kel = w.kelurahan || w.nama || '-';
+                    let tpsList = w.tps_terpilih || '-';
+                    let target = w.target_tps || 0;
+
+                    wList.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="py-3 px-4 text-center"><input type="checkbox" class="wilayah-checkbox rounded text-blue-600 cursor-pointer" value="${w.id}" onchange="updateBulkDeleteBtn()"></td>
+                            <td class="py-3 px-4">${kab}</td>
+                            <td class="py-3 px-4">${kec}</td>
+                            <td class="py-3 px-4 font-semibold text-slate-800">${kel}</td>
+                            <td class="py-3 px-4 text-xs max-w-[150px] truncate" title="${tpsList}">${tpsList}</td>
+                            <td class="py-3 px-4 text-center font-bold">${target}</td>
+                            <td class="py-3 px-4 text-right whitespace-nowrap">
+                                <button type="button" onclick="editWilayah('${w.id}')" class="text-xs bg-amber-50 text-amber-600 hover:bg-amber-100 px-3 py-1.5 rounded transition inline-flex items-center gap-1 font-medium mr-1"><i class="fas fa-edit"></i> Edit</button>
+                                <button type="button" onclick="deleteWilayah('${w.id}')" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded transition inline-flex items-center gap-1 font-medium"><i class="fas fa-trash"></i> Hapus</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                // Reset select all checkbox & bulk delete button state
+                const selectAllWilayah = document.getElementById('selectAllWilayah');
+                if (selectAllWilayah) selectAllWilayah.checked = false;
+                if (typeof updateBulkDeleteBtn === 'function') updateBulkDeleteBtn();
+            }
+        }
+
+        function populateTPSDropdown() {
+            const wilayahId = document.getElementById('input-wilayah').value;
+            const tpsSelect = document.getElementById('input-tps');
+            if (!tpsSelect) return;
+
+            // Reset TPS dropdown
+            tpsSelect.innerHTML = '<option value="">-- Pilih TPS --</option>';
+
+            if (!wilayahId) return;
+
+            const w = appData.wilayah.find(x => x.id === wilayahId);
+            if (w) {
+                // Pastikan nilai dikonversi menjadi string terlebih dahulu untuk mencegah error .trim() pada tipe Number
+                let tpsTerpilihStr = w.tps_terpilih != null ? String(w.tps_terpilih) : '';
+                
+                if (tpsTerpilihStr.trim() !== '') {
+                    // Gunakan daftar spesifik dari kolom TPS Terpilih
+                    let tpsList = tpsTerpilihStr.split(',').map(t => t.trim()).filter(t => t !== '');
+                    tpsList.forEach(tps => {
+                        tpsSelect.innerHTML += `<option value="${tps}">TPS ${tps}</option>`;
+                    });
+                } else if (w.target_tps && w.target_tps > 0) {
+                    // Jika tidak ada list TPS spesifik, buat otomatis urut dari 1 sampai target_tps
+                    for (let i = 1; i <= w.target_tps; i++) {
+                        let tpsNum = i.toString().padStart(2, '0');
+                        tpsSelect.innerHTML += `<option value="${tpsNum}">TPS ${tpsNum}</option>`;
+                    }
+                } else {
+                    // Fallback cadangan
+                    tpsSelect.innerHTML += `<option value="01">TPS 01</option>`;
+                }
+            }
+        }
+
+        // Actions
+        async function submitSuara(e) {
+            e.preventDefault();
+            let sId = document.getElementById('suara-id').value;
+            let wilayahId = document.getElementById('input-wilayah').value;
+            let tpsId = document.getElementById('input-tps').value;
+            
+            // Cari existing data waktu jika edit, jika baru buat waktu baru
+            let existingData = sId ? appData.suara.find(x => x.id === sId) : null;
+
+            let newSuara = {
+                id: sId || "s_" + new Date().getTime(),
+                wilayah: wilayahId,
+                tps: tpsId,
+                suara_tidak_sah: parseInt(document.getElementById('input-suara-tidak-sah').value) || 0,
+                total_pemilih: document.getElementById('input-dpt').value,
+                waktu: existingData ? existingData.waktu : new Date().toISOString()
+            };
+            
+            let totalSuaraSah = 0;
+            appData.paslon.forEach(p => {
+                let v = parseInt(document.getElementById(`inp_suara_${p.id}`).value) || 0;
+                newSuara["suara_" + p.nomor] = v;
+                totalSuaraSah += v;
+            });
+
+            if(totalSuaraSah + newSuara.suara_tidak_sah > parseInt(newSuara.total_pemilih)) {
+                showToast("Total suara (sah + tidak sah) tidak boleh melebihi total pemilih (DPT)!", "error");
+                return;
+            }
+
+            // Jika mode Edit, timpa array di index tersebut. Jika tidak, push baru.
+            if (sId) {
+                let idx = appData.suara.findIndex(s => s.id === sId);
+                if (idx > -1) {
+                    appData.suara[idx] = newSuara;
+                }
+                await saveData();
+                
+                // Sinkronisasikan secara masal (updateSuara menimpa sheet dengan array baru)
+                if (appData.pengaturan.api_url && appData.pengaturan.api_url.trim() !== "") {
+                    syncDataToServer('updateSuara', appData.suara, "Data TPS berhasil diperbarui di Server");
+                } else {
+                    showToast("Data TPS berhasil diperbarui (Mode Offline)", "success");
+                }
+            } else {
+                // Mode Tambah
+                appData.suara.push(newSuara);
+                await saveData();
+
+                if (appData.pengaturan.api_url && appData.pengaturan.api_url.trim() !== "") {
+                    showToast("Menyimpan data ke server...", "info");
+                    try {
+                        const res = await fetch(appData.pengaturan.api_url, {
+                            method: 'POST',
+                            body: JSON.stringify({ action: 'addSuara', data: newSuara })
+                        });
+                        const result = await res.json();
+                        if (result.status === 'success') {
+                            showToast("Data TPS berhasil disimpan lokal dan ke Server", "success");
+                        } else {
+                            showToast("Tersimpan lokal, gagal ke server: " + result.message, "error");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        showToast("Tersimpan lokal, gagal terhubung ke server", "error");
+                    }
+                } else {
+                    showToast("Data TPS berhasil disimpan (Mode Offline)", "success");
+                }
+            }
+
+            resetFormSuara();
+            updateAdminUI();
+        }
+
+        function editSuara(id) {
+            const s = appData.suara.find(x => x.id === id);
+            if (s) {
+                document.getElementById('suara-id').value = s.id;
+                document.getElementById('input-wilayah').value = s.wilayah;
+                
+                // Memicu dropdown TPS untuk diperbarui sesuai wilayah yang dipilih
+                populateTPSDropdown();
+                
+                document.getElementById('input-tps').value = s.tps;
+                document.getElementById('input-suara-tidak-sah').value = s.suara_tidak_sah || 0;
+                document.getElementById('input-dpt').value = s.total_pemilih || 0;
+
+                appData.paslon.forEach(p => {
+                    document.getElementById(`inp_suara_${p.id}`).value = s["suara_" + p.nomor] || 0;
+                });
+
+                // Tampilkan opsi edit
+                document.getElementById('btn-save-suara').innerHTML = '<i class="fas fa-save mr-2"></i> Simpan Perubahan';
+                document.getElementById('btn-cancel-suara').classList.remove('hidden');
+
+                document.getElementById('form-input-suara').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function resetFormSuara() {
+            document.getElementById('form-input-suara').reset();
+            document.getElementById('suara-id').value = '';
+            document.getElementById('btn-save-suara').innerHTML = '<i class="fas fa-save mr-2"></i> Simpan Data Suara';
+            document.getElementById('btn-cancel-suara').classList.add('hidden');
+            populateTPSDropdown(); // Reset dropdown TPS
+        }
+
+        function deleteSuara(id) {
+            showConfirmModal(
+                "Hapus Data TPS?", 
+                "Data suara TPS ini akan dihapus secara permanen dari sistem.", 
+                () => {
+                    appData.suara = appData.suara.filter(s => s.id !== id);
+                    saveData().then(() => {
+                        sendDeleteToServer('deleteSuara', id, "Data TPS berhasil dihapus dari Server");
+                        updateAdminUI();
+                    });
+                }
+            );
+        }
+
+        function toggleSelectAllSuara(source) {
+            const checkboxes = document.querySelectorAll('.suara-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBulkDeleteSuaraBtn();
+        }
+
+        function updateBulkDeleteSuaraBtn() {
+            const selected = document.querySelectorAll('.suara-checkbox:checked');
+            const btn = document.getElementById('btn-bulk-delete-suara');
+            const countSpan = document.getElementById('bulk-delete-suara-count');
+            
+            if (selected.length > 0) {
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+                countSpan.innerText = selected.length;
+            } else {
+                btn.classList.add('hidden');
+                btn.classList.remove('flex');
+            }
+        }
+
+        function bulkDeleteSuara() {
+            const selected = Array.from(document.querySelectorAll('.suara-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+
+            showConfirmModal(
+                "Hapus Masal Data TPS?", 
+                `PERINGATAN: Anda akan menghapus secara permanen ${selected.length} data suara. Lanjutkan?`, 
+                () => {
+                    appData.suara = appData.suara.filter(s => !selected.includes(s.id));
+                    
+                    saveData().then(() => {
+                        syncDataToServer('updateSuara', appData.suara, `${selected.length} data suara berhasil dihapus dari Server`);
+                        updateAdminUI();
+                    });
+                }
+            );
+        }
+
+        function savePengaturan(e) {
+            e.preventDefault();
+            appData.pengaturan.judul = document.getElementById('set-judul').value;
+            appData.pengaturan.lembaga = document.getElementById('set-lembaga').value;
+            appData.pengaturan.total_tps = document.getElementById('set-tps').value;
+            appData.pengaturan.margin_error = document.getElementById('set-moe').value;
+            appData.pengaturan.confidence_level = document.getElementById('set-cl').value;
+            
+            const oldApi = appData.pengaturan.api_url;
+            const newApi = document.getElementById('set-api').value;
+            appData.pengaturan.api_url = newApi;
+
+            saveData().then(() => {
+                syncPengaturanToServer();
+                if(oldApi !== newApi) {
+                    showToast("URL API berubah, memuat ulang data...", "info");
+                    loadData().then(() => updateAdminUI());
+                }
+            });
+        }
+
+        function openModalPaslon() {
+            document.getElementById('form-paslon').reset();
+            document.getElementById('paslon-id').value = '';
+            document.getElementById('modal-paslon-title').innerText = 'Tambah Paslon';
+            document.getElementById('modal-paslon').classList.remove('hidden');
+        }
+
+        function closeModalPaslon() {
+            document.getElementById('modal-paslon').classList.add('hidden');
+        }
+
+        function editPaslon(id) {
+            const p = appData.paslon.find(x => x.id === id);
+            if(p) {
+                document.getElementById('paslon-id').value = p.id;
+                document.getElementById('paslon-nomor').value = p.nomor;
+                document.getElementById('paslon-warna').value = p.warna;
+                document.getElementById('paslon-nama').value = p.nama;
+                document.getElementById('paslon-foto').value = p.foto_url || '';
+                
+                document.getElementById('modal-paslon-title').innerText = 'Edit Paslon';
+                document.getElementById('modal-paslon').classList.remove('hidden');
+            }
+        }
+
+        async function savePaslon(e) {
+            e.preventDefault();
+            let pId = document.getElementById('paslon-id').value || "p_" + new Date().getTime();
+            let paslonData = {
+                id: pId,
+                nomor: parseInt(document.getElementById('paslon-nomor').value),
+                warna: document.getElementById('paslon-warna').value,
+                nama: document.getElementById('paslon-nama').value,
+                foto_url: document.getElementById('paslon-foto').value
+            };
+
+            // Remove old if exists
+            appData.paslon = appData.paslon.filter(p => p.id !== pId);
+            appData.paslon.push(paslonData);
+            
+            // Simpan secara lokal ke browser
+            await saveData();
+
+            // Simpan secara otomatis ke Server (Google Sheet) jika URL API telah diatur
+            if (appData.pengaturan.api_url && appData.pengaturan.api_url.trim() !== "") {
+                showToast("Menyimpan data paslon ke server...", "info");
+                try {
+                    const res = await fetch(appData.pengaturan.api_url, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'updatePaslon',
+                            data: appData.paslon
+                        })
+                    });
+                    
+                    const result = await res.json();
+                    if (result.status === 'success') {
+                        showToast("Data Paslon berhasil disimpan lokal dan ke Server", "success");
+                    } else {
+                        showToast("Tersimpan lokal, gagal ke server: " + result.message, "error");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    showToast("Tersimpan lokal, gagal terhubung ke server", "error");
+                }
+            } else {
+                showToast("Paslon berhasil disimpan (Mode Offline)", "success");
+            }
+
+            closeModalPaslon();
+            updateAdminUI();
+        }
+
+        function deletePaslon(id) {
+            showConfirmModal(
+                "Hapus Paslon?", 
+                "Data perolehan suara paslon ini juga akan diabaikan dan dibersihkan dari perhitungan. Lanjutkan?", 
+                () => {
+                    const pToDelete = appData.paslon.find(p => p.id === id);
+                    if (pToDelete) {
+                        // Bersihkan properti suara paslon ini dari semua TPS
+                        appData.suara = appData.suara.map(s => {
+                            delete s["suara_" + pToDelete.nomor];
+                            return s;
+                        });
+                    }
+
+                    appData.paslon = appData.paslon.filter(p => p.id !== id);
+                    
+                    saveData().then(() => {
+                        sendDeleteToServer('deletePaslon', id, "Paslon berhasil dihapus dari Server");
+                        syncDataToServer('updateSuara', appData.suara, "Struktur suara disesuaikan di Server");
+                        updateAdminUI();
+                    });
+                }
+            );
+        }
+
+        function syncWilayahToServer() {
+            syncDataToServer('updateWilayah', appData.wilayah, "Data Wilayah berhasil disimpan ke Spreadsheet");
+        }
+
+        function syncPaslonToServer() {
+            syncDataToServer('updatePaslon', appData.paslon, "Data Paslon berhasil disimpan ke Spreadsheet");
+        }
+
+        function syncSuaraToServer() {
+            syncDataToServer('updateSuara', appData.suara, "Semua Data Suara berhasil disinkronisasi ke Spreadsheet");
+        }
+
+        async function syncDataToServer(actionName, dataPayload, successMsg) {
+            if (!appData.pengaturan.api_url || appData.pengaturan.api_url.trim() === "") {
+                showToast("URL API belum diatur di menu Pengaturan", "error");
+                return;
+            }
+            
+            showToast("Menyimpan data ke server...", "info");
+            
+            try {
+                const res = await fetch(appData.pengaturan.api_url, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: actionName,
+                        data: dataPayload
+                    })
+                });
+                
+                const result = await res.json();
+                if (result.status === 'success') {
+                    showToast(successMsg, "success");
+                } else {
+                    showToast("Gagal: " + result.message, "error");
+                }
+            } catch (error) {
+                console.error(error);
+                showToast("Terjadi kesalahan jaringan", "error");
+            }
+        }
+
+        function syncPengaturanToServer() {
+            let pengArr = [];
+            for (const [k, v] of Object.entries(appData.pengaturan)) {
+                if (k !== 'api_url') { // API URL tidak perlu disimpan ke Sheet publik
+                    pengArr.push({ Key: k, Value: v });
+                }
+            }
+            syncDataToServer('updatePengaturan', pengArr, "Pengaturan Umum berhasil disimpan ke Spreadsheet");
+        }
+
+        async function sendDeleteToServer(actionName, id, successMsg) {
+            if (!appData.pengaturan.api_url || appData.pengaturan.api_url.trim() === "") return;
+            
+            showToast("Menghapus data di server...", "info");
+            try {
+                const res = await fetch(appData.pengaturan.api_url, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: actionName, id: id })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    showToast(successMsg, "success");
+                } else {
+                    showToast("Gagal menghapus di server: " + result.message, "error");
+                }
+            } catch (error) {
+                console.error(error);
+                showToast("Gagal terhubung ke server saat menghapus", "error");
+            }
+        }
+
+        function calculateTargetTPS() {
+            const tpsInput = document.getElementById('wilayah-tps-terpilih').value;
+            const targetInput = document.getElementById('wilayah-target');
+            
+            if (tpsInput && tpsInput.trim() !== '') {
+                // Hitung jumlah TPS yang dipisahkan koma
+                const count = tpsInput.split(',').filter(t => t.trim() !== '').length;
+                targetInput.value = count;
+                
+                // Kunci input target agar otomatis mengikuti jumlah TPS yang diketik
+                targetInput.setAttribute('readonly', 'true');
+                targetInput.classList.add('bg-slate-100', 'text-slate-500');
+            } else {
+                // Kembalikan ke mode manual jika input daftar TPS kosong
+                targetInput.removeAttribute('readonly');
+                targetInput.classList.remove('bg-slate-100', 'text-slate-500');
+            }
+        }
+
+        function saveWilayah(e) {
+            e.preventDefault();
+            let wId = document.getElementById('wilayah-id').value;
+            let kab = document.getElementById('wilayah-kabupaten').value.trim();
+            let kec = document.getElementById('wilayah-kecamatan').value.trim();
+            let kel = document.getElementById('wilayah-kelurahan').value.trim();
+            let tpsTerpilih = document.getElementById('wilayah-tps-terpilih').value.trim();
+            let target = parseInt(document.getElementById('wilayah-target').value) || 0;
+            let wNama = `${kel}, ${kec}, ${kab}`;
+
+            // Hitung ulang target jika TPS terpilih diisi
+            if (tpsTerpilih) {
+                target = tpsTerpilih.split(',').filter(t => t.trim() !== '').length;
+            }
+
+            if(wId) {
+                // Mode Edit
+                let idx = appData.wilayah.findIndex(w => w.id === wId);
+                if(idx > -1) {
+                    appData.wilayah[idx] = { ...appData.wilayah[idx], kabupaten: kab, kecamatan: kec, kelurahan: kel, nama: wNama, tps_terpilih: tpsTerpilih, target_tps: target };
+                }
+            } else {
+                // Mode Tambah
+                appData.wilayah.push({
+                    id: "w_" + new Date().getTime(),
+                    kabupaten: kab,
+                    kecamatan: kec,
+                    kelurahan: kel,
+                    nama: wNama,
+                    tps_terpilih: tpsTerpilih,
+                    target_tps: target
+                });
+            }
+            
+            saveData().then(() => {
+                syncDataToServer('updateWilayah', appData.wilayah, "Data Wilayah berhasil disimpan ke Server");
+                resetFormWilayah();
+                updateAdminUI();
+            });
+        }
+
+        function editWilayah(id) {
+            const w = appData.wilayah.find(x => x.id === id);
+            if(w) {
+                document.getElementById('wilayah-id').value = w.id;
+                document.getElementById('wilayah-kabupaten').value = w.kabupaten || '';
+                document.getElementById('wilayah-kecamatan').value = w.kecamatan || '';
+                document.getElementById('wilayah-kelurahan').value = w.kelurahan || w.nama || '';
+                document.getElementById('wilayah-tps-terpilih').value = w.tps_terpilih || '';
+                document.getElementById('wilayah-target').value = w.target_tps || '';
+                
+                // Panggil ulang kalkulasi agar status "readonly" (terkunci) diterapkan jika ada tps terpilih
+                calculateTargetTPS();
+                
+                document.getElementById('btn-save-wilayah').innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan';
+                document.getElementById('btn-cancel-wilayah').classList.remove('hidden');
+                
+                document.getElementById('form-wilayah').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function resetFormWilayah() {
+            document.getElementById('form-wilayah').reset();
+            document.getElementById('wilayah-id').value = '';
+            document.getElementById('btn-save-wilayah').innerHTML = '<i class="fas fa-plus"></i> Tambah Wilayah';
+            document.getElementById('btn-cancel-wilayah').classList.add('hidden');
+            
+            // Reset state "readonly" pada kolom target TPS
+            calculateTargetTPS();
+        }
+
+        function deleteWilayah(id) {
+            showConfirmModal(
+                "Hapus Wilayah?", 
+                "PERINGATAN: SEMUA data suara (TPS) yang terkait dengan wilayah ini juga akan ikut terhapus!", 
+                () => {
+                    appData.wilayah = appData.wilayah.filter(w => w.id !== id);
+                    appData.suara = appData.suara.filter(s => s.wilayah !== id);
+                    
+                    saveData().then(() => {
+                        sendDeleteToServer('deleteWilayah', id, "Wilayah & data terkait dihapus dari Server");
+                        updateAdminUI();
+                    });
+                }
+            );
+        }
+
+        function toggleSelectAllWilayah(source) {
+            const checkboxes = document.querySelectorAll('.wilayah-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+            updateBulkDeleteBtn();
+        }
+
+        function updateBulkDeleteBtn() {
+            const selected = document.querySelectorAll('.wilayah-checkbox:checked');
+            const btn = document.getElementById('btn-bulk-delete-wilayah');
+            const countSpan = document.getElementById('bulk-delete-count');
+            
+            if (selected.length > 0) {
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+                countSpan.innerText = selected.length;
+            } else {
+                btn.classList.add('hidden');
+                btn.classList.remove('flex');
+            }
+        }
+
+        function bulkDeleteWilayah() {
+            const selected = Array.from(document.querySelectorAll('.wilayah-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+
+            showConfirmModal(
+                "Hapus Masal Wilayah?", 
+                `PERINGATAN: Anda akan menghapus ${selected.length} wilayah. SEMUA data suara (TPS) yang terkait dengan wilayah-wilayah ini juga akan ikut terhapus secara permanen!`, 
+                () => {
+                    // Filter out the selected wilayah and associated suara
+                    appData.wilayah = appData.wilayah.filter(w => !selected.includes(w.id));
+                    appData.suara = appData.suara.filter(s => !selected.includes(s.wilayah));
+                    
+                    saveData().then(() => {
+                        // Gunakan updateWilayah dan updateSuara untuk menimpa ulang data di server sekaligus (lebih efisien)
+                        syncDataToServer('updateWilayah', appData.wilayah, `${selected.length} wilayah berhasil dihapus dari Server`);
+                        setTimeout(() => syncDataToServer('updateSuara', appData.suara, "Data Suara disesuaikan"), 1000);
+                        updateAdminUI();
+                    });
+                }
+            );
+        }
+
+        function downloadTemplateWilayah() {
+            if (typeof XLSX === 'undefined') {
+                showToast("Library Excel sedang dimuat, silakan coba lagi.", "error");
+                return;
+            }
+
+            const ws_data = [
+                ["Kabupaten/Kota", "Kecamatan", "Kelurahan/Desa", "TPS Terpilih", "Target TPS"],
+                ["Jakarta Selatan", "Kebayoran Baru", "Senayan", "01, 04, 10", 3],
+                ["Jakarta Pusat", "Menteng", "Menteng", "02, 05", 2],
+                ["Bandung", "Coblong", "Dago", "", 150]
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Template Wilayah");
+
+            // Mengunduh file dengan format .xlsx (Excel)
+            XLSX.writeFile(wb, "Template_Data_Wilayah.xlsx");
+        }
+
+        function handleImportWilayah(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (typeof XLSX === 'undefined') {
+                showToast("Library Excel sedang dimuat, silakan coba lagi.", "error");
+                return;
+            }
+
+            showToast("Membaca file Excel...", "info");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (json.length === 0) {
+                        showToast("File Excel kosong atau format tidak sesuai.", "error");
+                        return;
+                    }
+
+                    let importedCount = 0;
+
+                    json.forEach(row => {
+                        // Mencocokkan dengan format header template
+                        let kab = row["Kabupaten/Kota"] || row["Kabupaten"] || row["Kota"] || "";
+                        let kec = row["Kecamatan"] || "";
+                        let kel = row["Kelurahan/Desa"] || row["Kelurahan"] || row["Desa"] || "";
+                        let tpsTerpilih = row["TPS Terpilih"] ? String(row["TPS Terpilih"]) : "";
+                        let target = parseInt(row["Target TPS"]) || 0;
+
+                        if (tpsTerpilih) {
+                            target = tpsTerpilih.split(',').filter(t => t.trim() !== '').length;
+                        }
+
+                        if (kab || kec || kel) {
+                            let wNama = [];
+                            if(kel) wNama.push(kel);
+                            if(kec) wNama.push(kec);
+                            if(kab) wNama.push(kab);
+
+                            appData.wilayah.push({
+                                id: "w_" + new Date().getTime() + "_" + Math.floor(Math.random() * 10000), // Random ID untuk mencegah tabrakan ID
+                                kabupaten: kab,
+                                kecamatan: kec,
+                                kelurahan: kel,
+                                nama: wNama.join(', '),
+                                tps_terpilih: tpsTerpilih,
+                                target_tps: target
+                            });
+                            importedCount++;
+                        }
+                    });
+
+                    if (importedCount > 0) {
+                        saveData().then(() => {
+                            syncDataToServer('updateWilayah', appData.wilayah, `${importedCount} data wilayah diimpor & disimpan ke Server!`);
+                            updateAdminUI();
+                        });
+                    } else {
+                        showToast("Tidak ada data valid yang dapat diimpor.", "error");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast("Gagal membaca file Excel. Pastikan format benar.", "error");
+                }
+                
+                // Reset input file agar bisa memilih file yang sama lagi jika perlu
+                event.target.value = '';
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function factoryReset() {
+            showConfirmModal(
+                "Reset Aplikasi?", 
+                "PERINGATAN! Seluruh data Anda akan dihapus dan dikembalikan ke simulasi awal. Lanjutkan?", 
+                () => {
+                    localStorage.removeItem('qc_data');
+                    location.reload();
+                }
+            );
+        }
+
+        /* ====================================================================
+           6. UTILITIES
+           ==================================================================== */
+
+        // Custom Confirm Modal Handling (Pengganti window.confirm)
+        let confirmActionCallback = null;
+
+        function showConfirmModal(title, msg, onConfirm) {
+            document.getElementById('modal-confirm-title').innerText = title;
+            document.getElementById('modal-confirm-msg').innerText = msg;
+            confirmActionCallback = onConfirm;
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('modal-confirm').classList.add('hidden');
+            confirmActionCallback = null;
+        }
+
+        document.getElementById('btn-confirm-action').addEventListener('click', () => {
+            if (confirmActionCallback) confirmActionCallback();
+            closeConfirmModal();
+        });
+
+        function showToast(msg, type='info') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            let bg = type === 'error' ? 'bg-red-500' : (type === 'success' ? 'bg-green-500' : 'bg-slate-800');
+            el.className = `toast ${bg} text-white px-4 py-3 rounded shadow-lg flex items-center gap-3 text-sm font-medium`;
+            el.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : (type==='success'?'check-circle':'info-circle')}"></i> ${msg}`;
+            container.appendChild(el);
+            
+            // Trigger animation
+            setTimeout(() => el.classList.add('show'), 10);
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        function animateValue(id, start, end, duration, formatIdID = false) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            if(!obj) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                let current = Math.floor(progress * (end - start) + start);
+                obj.innerHTML = formatIdID ? current.toLocaleString('id-ID') : current;
+                if (progress < 1) window.requestAnimationFrame(step);
+                else obj.innerHTML = formatIdID ? end.toLocaleString('id-ID') : end;
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                showToast("Library Excel sedang dimuat, silakan coba lagi.", "error");
+                return;
+            }
+
+            let ws_data = [];
+            
+            // Headers
+            let headers = ["Waktu", "Wilayah", "TPS", "DPT", "Suara Tidak Sah"];
+            appData.paslon.sort((a,b)=>a.nomor-b.nomor).forEach(p => headers.push(`Suara 0${p.nomor}`));
+            ws_data.push(headers);
+
+            // Rows
+            appData.suara.forEach(s => {
+                let wName = appData.wilayah.find(w => w.id === s.wilayah)?.nama || s.wilayah;
+                let row = [s.waktu, wName, s.tps, s.total_pemilih, (s.suara_tidak_sah || 0)];
+                appData.paslon.sort((a,b)=>a.nomor-b.nomor).forEach(p => {
+                    row.push(s["suara_"+p.nomor] || 0);
+                });
+                ws_data.push(row);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Data Quick Count");
+
+            // Mengunduh file dengan format .xlsx (Excel)
+            XLSX.writeFile(wb, "Data_Quick_Count.xlsx");
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast(`Error fullscreen: ${err.message}`, "error");
+                });
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function toggleVisibility(containerId, btn) {
+            const container = document.getElementById(containerId);
+            if(container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i> Sembunyikan';
+                
+                // Panggil resize pada chart.js jika form dibuka agar ukurannya tidak mengecil
+                if (containerId === 'chart-line-container' && charts.line) {
+                    charts.line.resize();
+                } else if (containerId === 'chart-bar-container' && charts.bar) {
+                    charts.bar.resize();
+                }
+            } else {
+                container.classList.add('hidden');
+                btn.innerHTML = '<i class="fas fa-eye"></i> View';
+            }
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData().then(() => {
+                handleRouting();
+            });
+        });
+
+    </script>
+</body>
+</html>
