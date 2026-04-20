@@ -39,6 +39,23 @@
         /* Hide Scrollbar but keep functionality */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Marquee / Running Text Animation */
+        .marquee-wrapper {
+            display: flex;
+            overflow: hidden;
+            white-space: nowrap;
+            width: 100%;
+        }
+        .marquee-text {
+            animation: marquee 25s linear infinite;
+            padding-left: 100%;
+            display: inline-block;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -48,9 +65,9 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <i class="fas fa-chart-pie text-blue-600 text-2xl mr-3"></i>
+                    <img src="https://iili.io/BgZsp0N.png" alt="Logo" class="h-10 w-auto mr-3 object-contain">
                     <div>
-                        <h1 class="font-bold text-lg leading-tight" id="nav-title">Quick Count</h1>
+                        <h1 class="font-bold text-lg leading-tight" id="nav-title">Portal Hitung Cepat</h1>
                         <p class="text-xs text-slate-500" id="nav-subtitle">Lembaga Survei</p>
                     </div>
                 </div>
@@ -97,6 +114,14 @@
                 </div>
             </div>
 
+            <!-- Running Text -->
+            <div class="bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-md flex items-center overflow-hidden">
+                <i class="fas fa-bullhorn mr-3 text-amber-400 animate-pulse"></i>
+                <div class="marquee-wrapper flex-1 text-sm font-medium tracking-wide">
+                    <span class="marquee-text" id="dash-running-text">Memuat informasi...</span>
+                </div>
+            </div>
+
             <!-- Stats Row -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="card p-4 flex items-center gap-4 border-l-4 border-blue-500">
@@ -130,7 +155,7 @@
             </div>
 
             <!-- Candidates Grid -->
-            <div id="dash-candidates" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="dash-candidates" class="grid gap-6">
                 <!-- Populated via JS -->
             </div>
 
@@ -488,6 +513,10 @@
                                         <input type="number" id="set-cl" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
                                     </div>
                                 </div>
+                                <div class="md:col-span-2 mt-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Running Text (Info Publik)</label>
+                                    <input type="text" id="set-running-text" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Selamat datang di portal informasi Quick Count...">
+                                </div>
                             </div>
                             
                             <hr class="my-4 border-slate-200">
@@ -573,11 +602,12 @@
         // Initial / Default Dummy Data for seamless Canvas Preview
         const DEFAULT_DATA = {
             pengaturan: {
-                judul: "Quick Count Pemilihan Gubernur 2026",
+                judul: "Portal Hitung Cepat",
                 lembaga: "Lembaga Survei Mandiri Indonesia",
                 total_tps: 5000,
                 margin_error: 1.5,
                 confidence_level: 95,
+                running_text: "Selamat datang di Pusat Informasi Quick Count. Data yang tampil di halaman ini adalah hasil perhitungan sementara dan bukan merupakan hasil resmi dari KPU.",
                 api_url: "https://script.google.com/macros/s/AKfycbyttWURe_jAV9LKZMV8i5tMdjKQolg7W0XDRyzkX1MBKScM7eLoX3rd4F4F3r37KB4a/exec" // URL Default yang otomatis tersinkron
             },
             paslon: [
@@ -669,18 +699,20 @@
                         appData.pengaturan.api_url = currentApiUrl; // Kembalikan URL API ke dalam pengaturan agar tidak terhapus
                         localStorage.setItem('qc_data', JSON.stringify(appData)); // Cache
                         isOnline = true;
+                        showToast("Data berhasil disinkronisasi dari server", "success");
                     } else {
                         throw new Error(data.message);
                     }
                 } catch (e) {
-                    console.error("API Fetch Error:", e);
-                    showToast("Gagal mengambil data dari server. Menggunakan data lokal.", "error");
+                    console.warn("API Fetch Offline/Error:", e.message);
+                    showToast("Mode Offline: Gagal terhubung ke server.", "error");
                 }
+            } else {
+                showToast("Data lokal berhasil dimuat", "success");
             }
             
             appData.lastUpdate = new Date();
             updateAppUI();
-            showToast("Data berhasil dimuat", "success");
         }
 
         async function saveData() {
@@ -754,7 +786,7 @@
         function updateAppUI() {
             // Global Updates (Nav)
             if (appData.pengaturan) {
-                document.getElementById('nav-title').innerText = appData.pengaturan.judul || "Quick Count";
+                // Judul navigasi dibiarkan statis sesuai HTML ("Portal Hitung Cepat")
                 document.getElementById('nav-subtitle').innerText = appData.pengaturan.lembaga || "";
             }
 
@@ -821,6 +853,12 @@
             document.getElementById('dash-title').innerText = set.judul;
             document.getElementById('dash-lembaga').innerText = set.lembaga;
             
+            // Update Running Text
+            const elRunning = document.getElementById('dash-running-text');
+            if (elRunning) {
+                elRunning.innerText = set.running_text || "Selamat datang di portal Quick Count.";
+            }
+
             // Animations for numbers
             animateValue('dash-total-suara', parseInt(document.getElementById('dash-total-suara').innerText.replace(/,/g,'')), stats.totalSuara, 1000, true);
             
@@ -842,26 +880,38 @@
             const candContainer = document.getElementById('dash-candidates');
             candContainer.innerHTML = '';
             
+            // Atur ukuran grid secara dinamis berdasarkan jumlah paslon
+            let pCount = stats.hasil.length;
+            let gridClass = 'grid gap-6 grid-cols-1 ';
+            if (pCount === 2) {
+                gridClass += 'sm:grid-cols-2';
+            } else if (pCount === 3) {
+                gridClass += 'md:grid-cols-3';
+            } else if (pCount >= 4) {
+                gridClass += 'sm:grid-cols-2 lg:grid-cols-4';
+            }
+            candContainer.className = gridClass;
+            
             // Cari suara tertinggi untuk menandai pemenang sementara
             let maxSuara = Math.max(...stats.hasil.map(h => h.suara));
 
             stats.hasil.forEach((h, index) => {
                 let isWinner = (h.suara === maxSuara && maxSuara > 0);
                 let card = document.createElement('div');
-                card.className = `card overflow-hidden relative ${isWinner ? 'ring-2 ring-amber-400' : ''}`;
+                card.className = `card overflow-hidden relative ${isWinner ? 'ring-2 ring-amber-400 shadow-md' : ''} flex flex-col items-center p-4 md:p-6 transition hover:shadow-lg`;
                 card.innerHTML = `
-                    ${isWinner ? '<div class="absolute top-0 right-0 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10"><i class="fas fa-crown mr-1"></i> Unggul</div>' : ''}
-                    <div class="h-2 w-full" style="background-color: ${h.warna}"></div>
-                    <div class="p-5 flex items-center gap-4">
-                        <img src="${h.foto_url || 'https://ui-avatars.com/api/?name='+h.nomor+'&background=random'}" alt="${h.nama}" class="w-20 h-20 rounded-xl object-cover shadow-sm border-2 border-slate-100">
-                        <div class="flex-1">
-                            <span class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-wide">Nomor ${h.nomor}</span>
-                            <h4 class="font-bold text-slate-800 leading-tight mt-1 mb-2">${h.nama}</h4>
-                            <div class="flex items-end justify-between">
-                                <span class="text-2xl font-black" style="color: ${h.warna}">${h.persentase}%</span>
-                                <span class="text-xs text-slate-500 font-medium">${h.suara.toLocaleString('id-ID')} suara</span>
-                            </div>
+                    ${isWinner ? '<div class="absolute top-0 right-0 bg-amber-400 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 shadow-sm"><i class="fas fa-crown mr-1"></i> Unggul</div>' : ''}
+                    <div class="h-2 w-full absolute top-0 left-0" style="background-color: ${h.warna}"></div>
+                    <div class="mt-4 mb-5 relative">
+                        <img src="${h.foto_url || 'https://ui-avatars.com/api/?name='+h.nomor+'&background=random'}" alt="${h.nama}" class="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover shadow-sm border-2 border-slate-50" style="border-color: ${h.warna}40;">
+                        <div class="absolute -bottom-3 left-1/2 -translate-x-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-sm text-sm md:text-lg" style="background-color: ${h.warna}">
+                            0${h.nomor}
                         </div>
+                    </div>
+                    <h4 class="font-bold text-slate-800 leading-tight mt-1 mb-4 text-center text-base md:text-lg line-clamp-2 px-2">${h.nama}</h4>
+                    <div class="w-full pt-4 border-t border-slate-100 text-center mt-auto">
+                        <p class="text-3xl md:text-4xl font-black mb-2 tracking-tighter drop-shadow-sm" style="color: ${h.warna}">${h.persentase}%</p>
+                        <p class="text-xs md:text-sm font-semibold text-slate-600 bg-slate-50 py-1.5 px-4 rounded-full inline-block border border-slate-200">${h.suara.toLocaleString('id-ID')} suara</p>
                     </div>
                 `;
                 candContainer.appendChild(card);
@@ -880,25 +930,40 @@
             const dataPcts = hasil.map(h => h.persentase);
             const bgColors = hasil.map(h => h.warna);
 
-            // BAR CHART
+            // DOUGHNUT CHART (Previously BAR CHART)
             const ctxBar = document.getElementById('chart-bar').getContext('2d');
             if(charts.bar) charts.bar.destroy();
             charts.bar = new Chart(ctxBar, {
-                type: 'bar',
+                type: 'doughnut',
                 data: {
                     labels: labels,
                     datasets: [{
                         data: dataPcts,
                         backgroundColor: bgColors,
-                        borderRadius: 6,
-                        borderWidth: 0
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw + '%' } } },
-                    scales: { y: { beginAtZero: true, max: 100, grid: { borderDash: [4, 4] } }, x: { grid: { display: false } } },
+                    cutout: '65%',
+                    layout: { padding: 10 },
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 20, font: { family: "'Inter', sans-serif", size: 12 } }
+                        }, 
+                        tooltip: { 
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#1e293b',
+                            bodyColor: '#1e293b',
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            callbacks: { label: c => ` ${c.label}: ${c.raw}%` } 
+                        } 
+                    },
                     animation: { duration: 1000 }
                 }
             });
@@ -1171,8 +1236,12 @@
                 document.getElementById('set-judul').value = appData.pengaturan.judul || '';
                 document.getElementById('set-lembaga').value = appData.pengaturan.lembaga || '';
                 document.getElementById('set-tps').value = appData.pengaturan.total_tps || 0;
-                document.getElementById('set-moe').value = appData.pengaturan.margin_error || 0;
-                document.getElementById('set-cl').value = appData.pengaturan.confidence_level || 0;
+                
+                // Konversi koma kembali menjadi titik agar bisa dimuat oleh form input type="number"
+                document.getElementById('set-moe').value = (appData.pengaturan.margin_error || 0).toString().replace(',', '.');
+                document.getElementById('set-cl').value = (appData.pengaturan.confidence_level || 0).toString().replace(',', '.');
+                
+                document.getElementById('set-running-text').value = appData.pengaturan.running_text || '';
                 document.getElementById('set-api').value = appData.pengaturan.api_url || '';
             }
 
@@ -1331,7 +1400,7 @@
                             showToast("Tersimpan lokal, gagal ke server: " + result.message, "error");
                         }
                     } catch (error) {
-                        console.error(error);
+                        console.warn("Fetch error:", error.message);
                         showToast("Tersimpan lokal, gagal terhubung ke server", "error");
                     }
                 } else {
@@ -1434,8 +1503,12 @@
             appData.pengaturan.judul = document.getElementById('set-judul').value;
             appData.pengaturan.lembaga = document.getElementById('set-lembaga').value;
             appData.pengaturan.total_tps = document.getElementById('set-tps').value;
-            appData.pengaturan.margin_error = document.getElementById('set-moe').value;
-            appData.pengaturan.confidence_level = document.getElementById('set-cl').value;
+            
+            // Konversi titik ke koma agar tersimpan sebagai "1,5" bukan "1.5" di Google Sheets
+            appData.pengaturan.margin_error = document.getElementById('set-moe').value.replace('.', ',');
+            appData.pengaturan.confidence_level = document.getElementById('set-cl').value.replace('.', ',');
+            
+            appData.pengaturan.running_text = document.getElementById('set-running-text').value;
             
             const oldApi = appData.pengaturan.api_url;
             const newApi = document.getElementById('set-api').value;
@@ -1512,7 +1585,7 @@
                         showToast("Tersimpan lokal, gagal ke server: " + result.message, "error");
                     }
                 } catch (error) {
-                    console.error(error);
+                    console.warn("Fetch error:", error.message);
                     showToast("Tersimpan lokal, gagal terhubung ke server", "error");
                 }
             } else {
@@ -1584,7 +1657,7 @@
                     showToast("Gagal: " + result.message, "error");
                 }
             } catch (error) {
-                console.error(error);
+                console.warn("Fetch error:", error.message);
                 showToast("Terjadi kesalahan jaringan", "error");
             }
         }
@@ -1615,7 +1688,7 @@
                     showToast("Gagal menghapus di server: " + result.message, "error");
                 }
             } catch (error) {
-                console.error(error);
+                console.warn("Fetch error:", error.message);
                 showToast("Gagal terhubung ke server saat menghapus", "error");
             }
         }
@@ -1857,7 +1930,7 @@
                         showToast("Tidak ada data valid yang dapat diimpor.", "error");
                     }
                 } catch (err) {
-                    console.error(err);
+                    console.warn("Excel error:", err.message);
                     showToast("Gagal membaca file Excel. Pastikan format benar.", "error");
                 }
                 
