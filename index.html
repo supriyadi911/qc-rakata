@@ -110,7 +110,13 @@
                         </div>
                         <span class="text-2xl font-bold" id="dash-progress-text">0.00%</span>
                     </div>
-                    <p class="text-xs text-blue-200 mt-1">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
+                    <p class="text-xs text-blue-200 mt-1 mb-2">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
+                    
+                    <div class="mt-3 pt-3 border-t border-blue-500/50 flex flex-wrap justify-end items-center gap-2 text-sm text-blue-100 font-medium">
+                        <span>Update Terakhir: <span id="dash-last-update">-</span></span>
+                        <span class="hidden sm:inline text-blue-300">|</span>
+                        <span class="flex items-center">Auto-refresh aktif <i class="fas fa-circle text-green-400 text-[10px] animate-pulse ml-2"></i></span>
+                    </div>
                 </div>
             </div>
 
@@ -214,12 +220,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-
-            <!-- Footer Info -->
-            <div class="text-center text-xs text-slate-400 mt-8">
-                <p>Update Terakhir: <span id="dash-last-update">-</span></p>
-                <p class="mt-1">Auto-refresh aktif <i class="fas fa-circle text-green-500 text-[8px] animate-pulse ml-1"></i></p>
             </div>
         </div>
     </template>
@@ -897,6 +897,14 @@
 
             stats.hasil.forEach((h, index) => {
                 let isWinner = (h.suara === maxSuara && maxSuara > 0);
+                
+                // Memformat nama agar menjadi 2 baris (menggunakan pemisah tanda - )
+                let namaParts = h.nama.split(/\s*-\s*/);
+                let displayNama = h.nama;
+                if (namaParts.length > 1) {
+                    displayNama = `<span class="block">${namaParts[0]}</span><span class="block">${namaParts.slice(1).join(' - ')}</span>`;
+                }
+
                 let card = document.createElement('div');
                 card.className = `card overflow-hidden relative ${isWinner ? 'ring-2 ring-amber-400 shadow-md' : ''} flex flex-col items-center p-4 md:p-6 transition hover:shadow-lg`;
                 card.innerHTML = `
@@ -908,7 +916,7 @@
                             0${h.nomor}
                         </div>
                     </div>
-                    <h4 class="font-bold text-slate-800 leading-tight mt-1 mb-4 text-center text-base md:text-lg line-clamp-2 px-2">${h.nama}</h4>
+                    <h4 class="font-bold text-slate-800 leading-snug mt-1 mb-4 text-center text-base md:text-lg px-2">${displayNama}</h4>
                     <div class="w-full pt-4 border-t border-slate-100 text-center mt-auto">
                         <p class="text-3xl md:text-4xl font-black mb-2 tracking-tighter drop-shadow-sm" style="color: ${h.warna}">${h.persentase}%</p>
                         <p class="text-xs md:text-sm font-semibold text-slate-600 bg-slate-50 py-1.5 px-4 rounded-full inline-block border border-slate-200">${h.suara.toLocaleString('id-ID')} suara</p>
@@ -925,13 +933,24 @@
         }
 
         function renderCharts(hasil) {
+            // Tunggu hingga library Chart.js selesai dimuat
+            if (typeof Chart === 'undefined') {
+                setTimeout(() => renderCharts(hasil), 500);
+                return;
+            }
+
+            // Pastikan elemen canvas tersedia sebelum menggambar
+            const canvasBar = document.getElementById('chart-bar');
+            const canvasLine = document.getElementById('chart-line');
+            if (!canvasBar || !canvasLine) return;
+
             // Prepare Data for Bar Chart
             const labels = hasil.map(h => '0' + h.nomor + '. ' + h.nama.split(' ')[0]);
             const dataPcts = hasil.map(h => h.persentase);
             const bgColors = hasil.map(h => h.warna);
 
             // DOUGHNUT CHART (Previously BAR CHART)
-            const ctxBar = document.getElementById('chart-bar').getContext('2d');
+            const ctxBar = canvasBar.getContext('2d');
             if(charts.bar) charts.bar.destroy();
             charts.bar = new Chart(ctxBar, {
                 type: 'doughnut',
@@ -1012,7 +1031,7 @@
                 tension: 0.3
             }));
 
-            const ctxLine = document.getElementById('chart-line').getContext('2d');
+            const ctxLine = canvasLine.getContext('2d');
             if(charts.line) charts.line.destroy();
             charts.line = new Chart(ctxLine, {
                 type: 'line',
