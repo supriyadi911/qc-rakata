@@ -100,11 +100,17 @@
                 
                 <div class="hidden sm:block w-px h-4 bg-blue-700"></div>
 
-                <div class="flex items-center gap-2 cursor-pointer group" onclick="toggleAutoRefresh()" title="Toggle Auto-refresh">
-                    <i id="dash-refresh-icon" class="fas fa-sync-alt text-sm font-medium group-hover:text-white transition animate-spin"></i>
-                    <!-- Toggle Switch UI -->
-                    <div id="refresh-toggle-bg" class="w-9 h-5 bg-green-500 rounded-full relative transition-colors duration-300 flex items-center px-0.5 cursor-pointer shadow-inner">
-                        <div id="refresh-toggle-dot" class="w-4 h-4 bg-white rounded-full transform translate-x-4 transition-transform duration-300 shadow-sm"></div>
+                <div class="flex items-center gap-3">
+                    <!-- Indikator Status Database -->
+                    <div id="nav-conn-dot" class="w-2.5 h-2.5 rounded-full bg-red-500" title="Status Database"></div>
+                    
+                    <!-- Toggle Auto-refresh -->
+                    <div class="flex items-center gap-2 cursor-pointer group" onclick="toggleAutoRefresh()" title="Toggle Auto-refresh">
+                        <span class="text-sm font-medium group-hover:text-white transition">Refresh</span>
+                        <!-- Toggle Switch UI -->
+                        <div id="refresh-toggle-bg" class="w-9 h-5 bg-green-500 rounded-full relative transition-colors duration-300 flex items-center px-0.5 cursor-pointer shadow-inner">
+                            <div id="refresh-toggle-dot" class="w-4 h-4 bg-white rounded-full transform translate-x-4 transition-transform duration-300 shadow-sm"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -311,7 +317,7 @@
                         </div>
                     </div>
                     <button onclick="syncData()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-sm transition flex items-center gap-2">
-                        <i class="fas fa-sync-alt" id="sync-icon"></i> Refresh Data
+                        <i class="fas fa-sync" id="sync-icon"></i> Refresh Data
                     </button>
                 </div>
 
@@ -812,6 +818,18 @@
                 document.getElementById('dash-last-update').innerText = d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID');
             }
 
+            // Indikator Status Database di Header
+            const navConnDot = document.getElementById('nav-conn-dot');
+            if (navConnDot) {
+                if (isOnline) {
+                    navConnDot.className = 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
+                    navConnDot.title = 'Online: Terhubung ke Database';
+                } else {
+                    navConnDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+                    navConnDot.title = 'Offline: Terputus dari Database';
+                }
+            }
+
             // Route specific updates
             const hash = window.location.hash || '#/';
             if (hash === '#/') updateDashboardUI();
@@ -829,13 +847,11 @@
             isAutoRefresh = !isAutoRefresh;
             const bg = document.getElementById('refresh-toggle-bg');
             const dot = document.getElementById('refresh-toggle-dot');
-            const icon = document.getElementById('dash-refresh-icon');
             
             if (isAutoRefresh) {
                 // UI Toggle: ON (Hijau)
                 bg.classList.replace('bg-slate-500', 'bg-green-500');
                 dot.classList.replace('translate-x-0', 'translate-x-4');
-                if (icon) icon.classList.add('animate-spin');
                 
                 const hash = window.location.hash || '#/';
                 if (hash === '#/') startAutoRefresh();
@@ -844,7 +860,6 @@
                 // UI Toggle: OFF (Abu-abu)
                 bg.classList.replace('bg-green-500', 'bg-slate-500');
                 dot.classList.replace('translate-x-4', 'translate-x-0');
-                if (icon) icon.classList.remove('animate-spin');
                 
                 if (refreshInterval) clearInterval(refreshInterval);
                 showToast("Auto-refresh dimatikan", "info");
