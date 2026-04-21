@@ -61,8 +61,9 @@
 <body class="text-slate-800">
 
     <!-- Navigation -->
-    <nav class="glass sticky top-0 z-50 border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav class="glass sticky top-0 z-50 border-b border-slate-200 shadow-sm flex flex-col">
+        <!-- Top Nav -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <img src="https://iili.io/BgZsp0N.png" alt="Logo" class="h-10 w-auto mr-3 object-contain">
@@ -72,13 +73,39 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button id="btn-fullscreen" class="text-slate-500 hover:text-blue-600 transition" onclick="toggleFullScreen()">
+                    <button id="btn-fullscreen" class="text-slate-500 hover:text-blue-600 transition" onclick="toggleFullScreen()" title="Fullscreen">
                         <i class="fas fa-expand"></i>
                     </button>
                     <a href="#/" class="text-sm font-medium text-slate-600 hover:text-blue-600" id="link-public">Publik</a>
                     <a href="#/admin" class="text-sm font-medium text-slate-600 hover:text-blue-600" id="link-admin">
                         <i class="fas fa-lock mr-1 text-xs"></i>Admin
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info & Running Text Bar -->
+        <div class="bg-blue-900 text-blue-100 flex flex-col md:flex-row items-center px-4 sm:px-6 lg:px-8 py-2 text-xs sm:text-sm w-full gap-2 md:gap-4">
+            <!-- Running Text -->
+            <div class="flex-1 flex items-center overflow-hidden w-full">
+                <i class="fas fa-bullhorn mr-3 text-amber-400 animate-pulse"></i>
+                <div class="marquee-wrapper flex-1 tracking-wide font-medium">
+                    <span class="marquee-text" id="dash-running-text">Memuat informasi...</span>
+                </div>
+            </div>
+            
+            <!-- Update & Toggle Auto-refresh -->
+            <div class="flex items-center justify-between w-full md:w-auto border-t md:border-t-0 border-blue-800/50 pt-2 md:pt-0 gap-4 shrink-0">
+                <span class="whitespace-nowrap">Update: <span id="dash-last-update" class="font-bold text-white">-</span></span>
+                
+                <div class="hidden sm:block w-px h-4 bg-blue-700"></div>
+
+                <div class="flex items-center gap-2 cursor-pointer group" onclick="toggleAutoRefresh()" title="Toggle Auto-refresh">
+                    <i id="dash-refresh-icon" class="fas fa-sync-alt text-sm font-medium group-hover:text-white transition animate-spin"></i>
+                    <!-- Toggle Switch UI -->
+                    <div id="refresh-toggle-bg" class="w-9 h-5 bg-green-500 rounded-full relative transition-colors duration-300 flex items-center px-0.5 cursor-pointer shadow-inner">
+                        <div id="refresh-toggle-dot" class="w-4 h-4 bg-white rounded-full transform translate-x-4 transition-transform duration-300 shadow-sm"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -110,21 +137,7 @@
                         </div>
                         <span class="text-2xl font-bold" id="dash-progress-text">0.00%</span>
                     </div>
-                    <p class="text-xs text-blue-200 mt-1 mb-2">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
-                    
-                    <div class="mt-3 pt-3 border-t border-blue-500/50 flex flex-wrap justify-end items-center gap-2 text-sm text-blue-100 font-medium">
-                        <span>Update Terakhir: <span id="dash-last-update">-</span></span>
-                        <span class="hidden sm:inline text-blue-300">|</span>
-                        <span class="flex items-center">Auto-refresh aktif <i class="fas fa-circle text-green-400 text-[10px] animate-pulse ml-2"></i></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Running Text -->
-            <div class="bg-blue-900 text-blue-100 py-2.5 px-4 rounded-xl shadow-md flex items-center overflow-hidden">
-                <i class="fas fa-bullhorn mr-3 text-amber-400 animate-pulse"></i>
-                <div class="marquee-wrapper flex-1 text-sm font-medium tracking-wide">
-                    <span class="marquee-text" id="dash-running-text">Memuat informasi...</span>
+                    <p class="text-xs text-blue-200 mt-1">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
                 </div>
             </div>
 
@@ -661,6 +674,7 @@
         let charts = { bar: null, line: null };
         let refreshInterval = null;
         let isOnline = false;
+        let isAutoRefresh = true; // State Auto-refresh
 
         /* ====================================================================
            2. CORE FUNCTIONS (Storage, API)
@@ -748,10 +762,9 @@
                 content.innerHTML = '';
                 content.appendChild(tpl);
                 updateDashboardUI();
-                // Auto refresh every 10s
-                refreshInterval = setInterval(() => {
-                    if (isOnline) loadData(); else updateDashboardUI();
-                }, 10000);
+                
+                // Mulai Auto-refresh jika status toggle menyala
+                if (isAutoRefresh) startAutoRefresh();
             } 
             else if (hash === '#/admin') {
                 // ADMIN LOGIN
@@ -784,16 +797,58 @@
            ==================================================================== */
 
         function updateAppUI() {
-            // Global Updates (Nav)
+            // Global Updates (Nav & Sticky Header)
             if (appData.pengaturan) {
-                // Judul navigasi dibiarkan statis sesuai HTML ("Portal Hitung Cepat")
                 document.getElementById('nav-subtitle').innerText = appData.pengaturan.lembaga || "";
+                
+                const elRunning = document.getElementById('dash-running-text');
+                if (elRunning) {
+                    elRunning.innerText = appData.pengaturan.running_text || "Selamat datang di portal Quick Count.";
+                }
+            }
+
+            if(appData.lastUpdate) {
+                let d = new Date(appData.lastUpdate);
+                document.getElementById('dash-last-update').innerText = d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID');
             }
 
             // Route specific updates
             const hash = window.location.hash || '#/';
             if (hash === '#/') updateDashboardUI();
             if (hash === '#/admin-panel') updateAdminUI();
+        }
+
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if (isOnline) loadData(); else updateDashboardUI();
+            }, 10000); // 10 detik
+        }
+
+        function toggleAutoRefresh() {
+            isAutoRefresh = !isAutoRefresh;
+            const bg = document.getElementById('refresh-toggle-bg');
+            const dot = document.getElementById('refresh-toggle-dot');
+            const icon = document.getElementById('dash-refresh-icon');
+            
+            if (isAutoRefresh) {
+                // UI Toggle: ON (Hijau)
+                bg.classList.replace('bg-slate-500', 'bg-green-500');
+                dot.classList.replace('translate-x-0', 'translate-x-4');
+                if (icon) icon.classList.add('animate-spin');
+                
+                const hash = window.location.hash || '#/';
+                if (hash === '#/') startAutoRefresh();
+                showToast("Auto-refresh diaktifkan", "success");
+            } else {
+                // UI Toggle: OFF (Abu-abu)
+                bg.classList.replace('bg-green-500', 'bg-slate-500');
+                dot.classList.replace('translate-x-4', 'translate-x-0');
+                if (icon) icon.classList.remove('animate-spin');
+                
+                if (refreshInterval) clearInterval(refreshInterval);
+                showToast("Auto-refresh dimatikan", "info");
+            }
         }
 
         function calculateStats() {
@@ -852,12 +907,6 @@
             // Update Header
             document.getElementById('dash-title').innerText = set.judul;
             document.getElementById('dash-lembaga').innerText = set.lembaga;
-            
-            // Update Running Text
-            const elRunning = document.getElementById('dash-running-text');
-            if (elRunning) {
-                elRunning.innerText = set.running_text || "Selamat datang di portal Quick Count.";
-            }
 
             // Animations for numbers
             animateValue('dash-total-suara', parseInt(document.getElementById('dash-total-suara').innerText.replace(/,/g,'')), stats.totalSuara, 1000, true);
@@ -870,11 +919,6 @@
             document.getElementById('dash-vto').innerText = stats.vto + '%';
             document.getElementById('dash-moe').innerText = '±' + (set.margin_error || 0) + '%';
             document.getElementById('dash-cl').innerText = (set.confidence_level || 0) + '%';
-            
-            if(appData.lastUpdate) {
-                let d = new Date(appData.lastUpdate);
-                document.getElementById('dash-last-update').innerText = d.toLocaleDateString('id-ID') + ' ' + d.toLocaleTimeString('id-ID');
-            }
 
             // Render Candidates Grid
             const candContainer = document.getElementById('dash-candidates');
