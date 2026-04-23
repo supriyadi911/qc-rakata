@@ -56,6 +56,9 @@
             0% { transform: translateX(0); }
             100% { transform: translateX(-100%); }
         }
+        
+        /* Mobile Bottom Nav styling */
+        .pb-safe { padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem); }
     </style>
 </head>
 <body class="text-slate-800">
@@ -64,12 +67,12 @@
     <nav class="glass sticky top-0 z-50 border-b border-slate-200 shadow-sm flex flex-col">
         <!-- Top Nav -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between h-14 md:h-16">
                 <div class="flex items-center">
-                    <img src="https://iili.io/BgZsp0N.png" alt="Logo" class="h-10 w-auto mr-3 object-contain">
+                    <img src="https://iili.io/BgZsp0N.png" alt="Logo" class="h-8 md:h-10 w-auto mr-2 md:mr-3 object-contain">
                     <div>
-                        <h1 class="font-bold text-lg leading-tight" id="nav-title">Portal Hitung Cepat</h1>
-                        <p class="text-xs text-slate-500" id="nav-subtitle">Lembaga Survei</p>
+                        <h1 class="font-bold text-base md:text-lg leading-tight" id="nav-title">Portal Hitung Cepat</h1>
+                        <p class="text-[10px] md:text-xs text-slate-500" id="nav-subtitle">Lembaga Survei</p>
                     </div>
                 </div>
                 <div class="flex items-center space-x-4">
@@ -118,7 +121,7 @@
     </nav>
 
     <!-- Main Content Area -->
-    <main id="app-content" class="pb-20"></main>
+    <main id="app-content" class="pb-24 md:pb-10"></main>
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container" class="flex flex-col gap-2"></div>
@@ -127,93 +130,93 @@
 
     <!-- 1. PUBLIC DASHBOARD TEMPLATE -->
     <template id="tpl-dashboard">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 space-y-4 md:space-y-6">
             
             <!-- Header Status -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-blue-600 text-white p-6 rounded-xl shadow-lg">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 md:gap-4 bg-blue-600 text-white p-4 md:p-6 rounded-xl shadow-lg">
                 <div>
-                    <h2 class="text-2xl font-bold" id="dash-title">Loading...</h2>
-                    <p class="text-blue-100 mt-1"><i class="fas fa-building mr-2"></i><span id="dash-lembaga">...</span></p>
+                    <h2 class="text-xl md:text-2xl font-bold" id="dash-title">Loading...</h2>
+                    <p class="text-sm md:text-base text-blue-100 mt-1"><i class="fas fa-building mr-2"></i><span id="dash-lembaga">...</span></p>
                 </div>
-                <div class="text-right w-full md:w-auto">
-                    <p class="text-sm text-blue-100 mb-1">Data Masuk</p>
-                    <div class="flex items-center justify-end gap-3">
-                        <div class="w-48 bg-blue-800 rounded-full h-3 overflow-hidden">
-                            <div id="dash-progress-bar" class="bg-green-400 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                <div class="text-left md:text-right w-full md:w-auto border-t border-blue-500/50 md:border-t-0 pt-3 md:pt-0">
+                    <p class="text-xs md:text-sm text-blue-100 mb-1">Data Masuk</p>
+                    <div class="flex items-center md:justify-end gap-3">
+                        <div class="w-full md:w-48 bg-blue-800 rounded-full h-2.5 md:h-3 overflow-hidden">
+                            <div id="dash-progress-bar" class="bg-green-400 h-2.5 md:h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
                         </div>
-                        <span class="text-2xl font-bold" id="dash-progress-text">0.00%</span>
+                        <span class="text-xl md:text-2xl font-bold" id="dash-progress-text">0.00%</span>
                     </div>
-                    <p class="text-xs text-blue-200 mt-1">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
+                    <p class="text-[10px] md:text-xs text-blue-200 mt-1">TPS: <span id="dash-tps-masuk">0</span> / <span id="dash-tps-total">0</span></p>
                 </div>
             </div>
 
             <!-- Stats Row -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="card p-4 flex items-center gap-4 border-l-4 border-blue-500">
-                    <div class="bg-blue-50 p-3 rounded-lg text-blue-600"><i class="fas fa-users text-xl"></i></div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div class="card p-3 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 border-l-4 border-blue-500">
+                    <div class="bg-blue-50 p-2 md:p-3 rounded-lg text-blue-600 self-start md:self-auto"><i class="fas fa-users text-lg md:text-xl"></i></div>
                     <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Suara</p>
-                        <p class="text-xl font-bold" id="dash-total-suara">0</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">Total Suara</p>
+                        <p class="text-lg md:text-xl font-bold leading-tight" id="dash-total-suara">0</p>
                     </div>
                 </div>
-                <div class="card p-4 flex items-center gap-4 border-l-4 border-green-500">
-                    <div class="bg-green-50 p-3 rounded-lg text-green-600"><i class="fas fa-check-circle text-xl"></i></div>
+                <div class="card p-3 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 border-l-4 border-green-500">
+                    <div class="bg-green-50 p-2 md:p-3 rounded-lg text-green-600 self-start md:self-auto"><i class="fas fa-check-circle text-lg md:text-xl"></i></div>
                     <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Partisipasi (VTO)</p>
-                        <p class="text-xl font-bold" id="dash-vto">0.00%</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">Partisipasi (VTO)</p>
+                        <p class="text-lg md:text-xl font-bold leading-tight" id="dash-vto">0.00%</p>
                     </div>
                 </div>
-                <div class="card p-4 flex items-center gap-4 border-l-4 border-amber-500">
-                    <div class="bg-amber-50 p-3 rounded-lg text-amber-600"><i class="fas fa-balance-scale text-xl"></i></div>
+                <div class="card p-3 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 border-l-4 border-amber-500">
+                    <div class="bg-amber-50 p-2 md:p-3 rounded-lg text-amber-600 self-start md:self-auto"><i class="fas fa-balance-scale text-lg md:text-xl"></i></div>
                     <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Margin of Error</p>
-                        <p class="text-xl font-bold" id="dash-moe">±0.00%</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">Margin of Error</p>
+                        <p class="text-lg md:text-xl font-bold leading-tight" id="dash-moe">±0.00%</p>
                     </div>
                 </div>
-                <div class="card p-4 flex items-center gap-4 border-l-4 border-purple-500">
-                    <div class="bg-purple-50 p-3 rounded-lg text-purple-600"><i class="fas fa-bullseye text-xl"></i></div>
+                <div class="card p-3 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-4 border-l-4 border-purple-500">
+                    <div class="bg-purple-50 p-2 md:p-3 rounded-lg text-purple-600 self-start md:self-auto"><i class="fas fa-bullseye text-lg md:text-xl"></i></div>
                     <div>
-                        <p class="text-xs text-slate-500 font-medium uppercase tracking-wider">Confidence Level</p>
-                        <p class="text-xl font-bold" id="dash-cl">0%</p>
+                        <p class="text-[10px] md:text-xs text-slate-500 font-medium uppercase tracking-wider">Confidence Level</p>
+                        <p class="text-lg md:text-xl font-bold leading-tight" id="dash-cl">0%</p>
                     </div>
                 </div>
             </div>
 
             <!-- Candidates Grid -->
-            <div id="dash-candidates" class="grid gap-6">
+            <div id="dash-candidates" class="grid gap-4 md:gap-6">
                 <!-- Populated via JS -->
             </div>
 
             <!-- Charts Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="card p-5 lg:col-span-1">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                <div class="card p-4 md:p-5 lg:col-span-1">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 class="font-bold text-slate-700">Perolehan Suara</h3>
+                        <h3 class="font-bold text-sm md:text-base text-slate-700">Perolehan Suara</h3>
                         <button onclick="toggleVisibility('chart-bar-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </div>
-                    <div id="chart-bar-container" class="relative h-64 hidden">
+                    <div id="chart-bar-container" class="relative h-56 md:h-64 hidden w-full">
                         <canvas id="chart-bar"></canvas>
                     </div>
                 </div>
-                <div class="card p-5 lg:col-span-2">
+                <div class="card p-4 md:p-5 lg:col-span-2">
                     <div class="flex justify-between items-center mb-4 border-b pb-2">
-                        <h3 class="font-bold text-slate-700">Tren Suara Masuk (Waktu)</h3>
+                        <h3 class="font-bold text-sm md:text-base text-slate-700">Tren Suara Masuk</h3>
                         <button onclick="toggleVisibility('chart-line-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
                             <i class="fas fa-eye"></i> View
                         </button>
                     </div>
-                    <div id="chart-line-container" class="relative h-64 hidden">
+                    <div id="chart-line-container" class="relative h-56 md:h-64 hidden w-full">
                         <canvas id="chart-line"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Region Table -->
-            <div class="card p-5 overflow-hidden">
+            <div class="card p-4 md:p-5 overflow-hidden">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-2 gap-2">
-                    <h3 class="font-bold text-slate-700">Sebaran Suara per Wilayah</h3>
+                    <h3 class="font-bold text-sm md:text-base text-slate-700">Sebaran Suara per Wilayah</h3>
                     <div class="flex items-center gap-2">
                         <button onclick="toggleVisibility('table-region-container', this)" class="text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded transition flex items-center gap-1 font-medium">
                             <i class="fas fa-eye"></i> View
@@ -224,8 +227,8 @@
                     </div>
                 </div>
                 <div id="table-region-container" class="overflow-x-auto hidden">
-                    <table class="w-full text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-xs border-b">
+                    <table class="w-full text-left text-xs md:text-sm text-slate-600 whitespace-nowrap md:whitespace-normal">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold text-[10px] md:text-xs border-b">
                             <tr id="table-head-row">
                                 <th class="py-3 px-4">Wilayah</th>
                                 <th class="py-3 px-4 text-center">TPS Masuk</th>
@@ -268,10 +271,10 @@
 
     <!-- 3. ADMIN PANEL TEMPLATE -->
     <template id="tpl-admin">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-6">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-8 flex flex-col md:flex-row gap-4 md:gap-6">
             
-            <!-- Sidebar -->
-            <div class="w-full md:w-64 shrink-0">
+            <!-- Sidebar Desktop -->
+            <div class="hidden md:block w-64 shrink-0">
                 <div class="card p-4 sticky top-24">
                     <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
                         <div class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center">
@@ -306,27 +309,27 @@
             </div>
 
             <!-- Content Area -->
-            <div class="flex-1 space-y-6">
+            <div class="flex-1 min-w-0 w-full space-y-4 md:space-y-6">
                 <!-- Status Bar -->
-                <div class="card p-4 flex justify-between items-center bg-slate-800 text-white">
+                <div class="card p-3 md:p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-800 text-white w-full">
                     <div>
-                        <span class="text-xs text-slate-400 block">Status Koneksi</span>
+                        <span class="text-[10px] md:text-xs text-slate-400 block">Status Koneksi</span>
                         <div class="flex items-center gap-2">
-                            <div id="conn-indicator" class="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                            <span id="conn-text" class="font-medium text-sm">Local Storage (Offline Mode)</span>
+                            <div id="conn-indicator" class="w-2 md:w-2.5 h-2 md:h-2.5 rounded-full bg-green-500"></div>
+                            <span id="conn-text" class="font-medium text-xs md:text-sm">Local Storage (Offline Mode)</span>
                         </div>
                     </div>
-                    <button onclick="syncData()" class="bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-sm transition flex items-center gap-2">
+                    <button onclick="syncData()" class="w-full sm:w-auto justify-center bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded text-xs md:text-sm transition flex items-center gap-2">
                         <i class="fas fa-sync" id="sync-icon"></i> Refresh Data
                     </button>
                 </div>
 
                 <!-- Tab: Input Suara -->
                 <div id="tab-input" class="admin-tab-content block">
-                    <div class="card p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="text-lg font-bold text-slate-800">Entry Data TPS</h3>
-                            <button type="button" onclick="syncSuaraToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                    <div class="card p-4 md:p-6 w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-2 gap-2">
+                            <h3 class="text-base md:text-lg font-bold text-slate-800">Entry Data TPS</h3>
+                            <button type="button" onclick="syncSuaraToServer()" class="w-full sm:w-auto justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-xs md:text-sm font-medium transition flex items-center gap-1">
                                 <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
                             </button>
                         </div>
@@ -365,9 +368,9 @@
                                 </div>
                             </div>
 
-                            <div class="pt-2 flex gap-2">
-                                <button type="button" onclick="resetFormSuara()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium" id="btn-cancel-suara">Batal</button>
-                                <button type="submit" id="btn-save-suara" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition flex items-center">
+                            <div class="pt-2 flex gap-2 flex-col sm:flex-row">
+                                <button type="button" onclick="resetFormSuara()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium text-center" id="btn-cancel-suara">Batal</button>
+                                <button type="submit" id="btn-save-suara" class="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition flex items-center">
                                     <i class="fas fa-save mr-2"></i> Simpan Data Suara
                                 </button>
                             </div>
@@ -375,21 +378,35 @@
                     </div>
 
                     <!-- Recent Inputs -->
-                    <div class="card p-6 mt-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
-                            <h3 class="text-sm font-bold text-slate-800">Data Suara Masuk</h3>
-                            <button type="button" id="btn-bulk-delete-suara" onclick="bulkDeleteSuara()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-sm font-medium transition hidden items-center gap-1">
-                                <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-suara-count">0</span>)
-                            </button>
+                    <div class="card p-4 md:p-6 mt-4 md:mt-6 w-full">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 border-b pb-2 gap-3">
+                            <h3 class="text-sm font-bold text-slate-800 shrink-0">Data Suara Masuk</h3>
+                            <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+                                <!-- Filter Pencarian -->
+                                <div class="relative w-full sm:w-64">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <i class="fas fa-search text-slate-400 text-xs"></i>
+                                    </div>
+                                    <input type="text" id="filter-data-suara" oninput="handleFilterDataSuara(event)" class="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-xs md:text-sm" placeholder="Cari wilayah, TPS...">
+                                </div>
+                                <button type="button" id="btn-bulk-delete-suara" onclick="bulkDeleteSuara()" class="w-full sm:w-auto justify-center bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-xs md:text-sm font-medium transition hidden items-center gap-1">
+                                    <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-suara-count">0</span>)
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto max-h-96 overflow-y-auto border border-slate-200 rounded-lg relative">
-                            <table class="w-full text-left text-sm text-slate-600">
+                            <table class="w-full text-left text-xs md:text-sm text-slate-600 whitespace-nowrap">
                                 <thead class="bg-slate-50 text-slate-700 font-semibold border-b sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="py-2 px-3 w-10 text-center"><input type="checkbox" id="selectAllSuara" onchange="toggleSelectAllSuara(this)" class="rounded text-blue-600 cursor-pointer"></th>
-                                        <th class="py-2 px-3">Waktu</th>
-                                        <th class="py-2 px-3">Wilayah / TPS</th>
-                                        <th class="py-2 px-3">Total Sah</th>
+                                        <th class="py-2 px-3 cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('waktu')">Waktu <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="waktu"></i></th>
+                                        <th class="py-2 px-3 cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('kab')">Kab/Kota <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="kab"></i></th>
+                                        <th class="py-2 px-3 cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('kec')">Kecamatan <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="kec"></i></th>
+                                        <th class="py-2 px-3 cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('kel')">Kelurahan <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="kel"></i></th>
+                                        <th class="py-2 px-3 text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('tps')">TPS <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="tps"></i></th>
+                                        <th class="py-2 px-3 text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('sah')">Total Sah <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="sah"></i></th>
+                                        <th class="py-2 px-3 text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('tidaksah')">Tidak Sah <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="tidaksah"></i></th>
+                                        <th class="py-2 px-3 text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDataSuara('dpt')">DPT <i class="fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon" data-col="dpt"></i></th>
                                         <th class="py-2 px-3 text-right">Aksi</th>
                                     </tr>
                                 </thead>
@@ -402,15 +419,15 @@
                 </div>
 
                 <!-- Tab: Kelola Paslon -->
-                <div id="tab-paslon" class="admin-tab-content hidden space-y-6">
-                    <div class="card p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="text-lg font-bold text-slate-800">Daftar Pasangan Calon</h3>
-                            <div class="flex gap-2">
-                                <button type="button" onclick="syncPaslonToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
-                                    <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                <div id="tab-paslon" class="admin-tab-content hidden space-y-4 md:space-y-6">
+                    <div class="card p-4 md:p-6 w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-2 gap-2">
+                            <h3 class="text-base md:text-lg font-bold text-slate-800">Daftar Pasangan Calon</h3>
+                            <div class="flex w-full sm:w-auto gap-2">
+                                <button type="button" onclick="syncPaslonToServer()" class="flex-1 sm:flex-none justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-xs md:text-sm font-medium transition flex items-center gap-1">
+                                    <i class="fas fa-cloud-upload-alt"></i> Simpan Server
                                 </button>
-                                <button onclick="openModalPaslon()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                                <button onclick="openModalPaslon()" class="flex-1 sm:flex-none justify-center bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-xs md:text-sm font-medium transition flex items-center gap-1">
                                     <i class="fas fa-plus"></i> Tambah
                                 </button>
                             </div>
@@ -422,65 +439,72 @@
                 </div>
 
                 <!-- Tab: Data Wilayah -->
-                <div id="tab-wilayah" class="admin-tab-content hidden space-y-6">
-                     <div class="card p-6">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 border-b pb-2 gap-2">
-                            <h3 class="text-lg font-bold text-slate-800">Manajemen Wilayah</h3>
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" onclick="syncWilayahToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
-                                    <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
+                <div id="tab-wilayah" class="admin-tab-content hidden space-y-4 md:space-y-6">
+                     <!-- Card Manajemen Wilayah (Form) -->
+                     <div class="card p-4 md:p-6 w-full">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 border-b pb-3 gap-3 w-full">
+                            <h3 class="text-base md:text-lg font-bold text-slate-800">Manajemen Wilayah</h3>
+                            <div class="flex w-full lg:w-auto gap-2">
+                                <button type="button" onclick="syncWilayahToServer()" class="flex-1 lg:flex-none justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-2 text-xs md:text-sm font-medium transition flex items-center gap-1 rounded-lg">
+                                    <i class="fas fa-cloud-upload-alt"></i> Ke Server
                                 </button>
-                                <button type="button" onclick="document.getElementById('import-wilayah-file').click()" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2">
-                                    <i class="fas fa-file-import"></i> Import Excel
+                                <button type="button" onclick="document.getElementById('import-wilayah-file').click()" class="flex-1 lg:flex-none justify-center bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-2 text-xs md:text-sm font-medium transition flex items-center gap-1 rounded-lg">
+                                    <i class="fas fa-file-import"></i> Import
                                 </button>
-                                <button type="button" onclick="downloadTemplateWilayah()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2">
-                                    <i class="fas fa-file-excel"></i> Template Excel
+                                <button type="button" onclick="downloadTemplateWilayah()" class="flex-1 lg:flex-none justify-center bg-slate-100 text-slate-700 hover:bg-slate-200 px-3 py-2 text-xs md:text-sm font-medium transition flex items-center gap-1 rounded-lg">
+                                    <i class="fas fa-file-excel"></i> Template
                                 </button>
                                 <input type="file" id="import-wilayah-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleImportWilayah(event)">
-                                <button type="button" id="btn-bulk-delete-wilayah" onclick="bulkDeleteWilayah()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-sm font-medium transition hidden items-center gap-1">
-                                    <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-count">0</span>)
-                                </button>
                             </div>
                         </div>
                         
-                        <form id="form-wilayah" onsubmit="saveWilayah(event)" class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+                        <form id="form-wilayah" onsubmit="saveWilayah(event)" class="w-full">
                             <input type="hidden" id="wilayah-id">
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kabupaten/Kota</label>
+                                <div class="w-full">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Kabupaten/Kota</label>
                                     <input type="text" id="wilayah-kabupaten" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Jakarta Selatan" required>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kecamatan</label>
+                                <div class="w-full">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Kecamatan</label>
                                     <input type="text" id="wilayah-kecamatan" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Kebayoran Baru" required>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Kelurahan/Desa</label>
+                                <div class="w-full">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Kelurahan/Desa</label>
                                     <input type="text" id="wilayah-kelurahan" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: Senayan" required>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Daftar TPS Terpilih (Pisahkan dengan Koma)</label>
+                                <div class="md:col-span-2 w-full">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Daftar TPS Terpilih (Pisahkan dengan Koma)</label>
                                     <input type="text" id="wilayah-tps-terpilih" onkeyup="calculateTargetTPS()" onchange="calculateTargetTPS()" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="Contoh: 01, 04, 12">
                                     <p class="text-[10px] text-slate-500 mt-1">Isi jika ini adalah TPS Sampel. Target TPS akan terhitung otomatis.</p>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 mb-1 uppercase tracking-wide">Target TPS</label>
+                                <div class="w-full">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Target TPS</label>
                                     <input type="number" id="wilayah-target" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors" placeholder="Contoh: 100" min="0">
                                 </div>
                             </div>
-                            <div class="flex justify-end gap-2">
-                                <button type="button" onclick="resetFormWilayah()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium" id="btn-cancel-wilayah">Batal</button>
-                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2" id="btn-save-wilayah">
+                            <div class="flex flex-col sm:flex-row justify-end gap-2 mt-4 pt-4 border-t border-slate-100">
+                                <button type="button" onclick="resetFormWilayah()" class="w-full sm:w-auto px-4 py-2 text-sm text-slate-600 hover:bg-slate-200 rounded-lg transition hidden font-medium text-center" id="btn-cancel-wilayah">Batal</button>
+                                <button type="submit" class="w-full sm:w-auto justify-center bg-blue-600 text-white px-6 py-2 text-sm rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2 shadow-sm" id="btn-save-wilayah">
                                     <i class="fas fa-plus"></i> Tambah Wilayah
                                 </button>
                             </div>
                         </form>
+                    </div>
 
-                        <div class="overflow-x-auto border border-slate-200 rounded-lg">
-                            <table class="w-full text-left text-sm text-slate-600">
-                                <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                    <!-- Card Daftar Wilayah (Tabel) -->
+                    <div class="card p-4 md:p-6 w-full">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 border-b pb-3 gap-3 w-full">
+                            <h3 class="text-sm md:text-base font-bold text-slate-800">Daftar Wilayah</h3>
+                            <button type="button" id="btn-bulk-delete-wilayah" onclick="bulkDeleteWilayah()" class="w-full lg:w-auto justify-center bg-red-100 text-red-700 hover:bg-red-200 px-3 py-2 rounded-lg text-xs md:text-sm font-medium transition hidden items-center gap-2">
+                                <i class="fas fa-trash-alt"></i> Hapus Terpilih (<span id="bulk-delete-count">0</span>)
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto max-h-96 overflow-y-auto border border-slate-200 rounded-lg relative">
+                            <table class="w-full text-left text-xs md:text-sm text-slate-600 whitespace-nowrap">
+                                <thead class="bg-slate-50 text-slate-700 font-semibold border-b sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th class="py-3 px-4 w-10 text-center"><input type="checkbox" id="selectAllWilayah" onchange="toggleSelectAllWilayah(this)" class="rounded text-blue-600 cursor-pointer"></th>
                                         <th class="py-3 px-4">Kabupaten/Kota</th>
@@ -500,11 +524,11 @@
                 </div>
 
                 <!-- Tab: Pengaturan -->
-                <div id="tab-pengaturan" class="admin-tab-content hidden space-y-6">
-                    <div class="card p-6">
-                        <div class="flex justify-between items-center mb-4 border-b pb-2">
-                            <h3 class="text-lg font-bold text-slate-800">Pengaturan Umum</h3>
-                            <button type="button" onclick="syncPengaturanToServer()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-1">
+                <div id="tab-pengaturan" class="admin-tab-content hidden space-y-4 md:space-y-6">
+                    <div class="card p-4 md:p-6 w-full">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-2 gap-2">
+                            <h3 class="text-base md:text-lg font-bold text-slate-800">Pengaturan Umum</h3>
+                            <button type="button" onclick="syncPengaturanToServer()" class="w-full sm:w-auto justify-center bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-xs md:text-sm font-medium transition flex items-center gap-1">
                                 <i class="fas fa-cloud-upload-alt"></i> Simpan ke Server
                             </button>
                         </div>
@@ -522,35 +546,28 @@
                                     <label class="block text-sm font-medium text-slate-700 mb-1">Target Total TPS</label>
                                     <input type="number" id="set-tps" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
                                 </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Margin of Error (%)</label>
-                                        <input type="number" step="0.1" id="set-moe" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-slate-700 mb-1">Confidence Level (%)</label>
-                                        <input type="number" id="set-cl" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
-                                    </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Margin of Error (%)</label>
+                                    <input type="number" id="set-moe" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
                                 </div>
-                                <div class="md:col-span-2 mt-2">
-                                    <label class="block text-sm font-medium text-slate-700 mb-1">Running Text (Info Publik)</label>
-                                    <input type="text" id="set-running-text" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="Contoh: Selamat datang di portal informasi Quick Count...">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Confidence Level (%)</label>
+                                    <input type="number" id="set-cl" step="0.01" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" required>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Running Text Info</label>
+                                    <textarea id="set-running-text" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" rows="2"></textarea>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">URL API (Google Script)</label>
+                                    <input type="url" id="set-api" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="https://script.google.com/...">
                                 </div>
                             </div>
-                            
-                            <hr class="my-4 border-slate-200">
-                            <h4 class="text-sm font-bold text-slate-700 mb-2">Integrasi Backend</h4>
-                            <p class="text-xs text-slate-500 mb-3">Masukkan URL Google Apps Script Web App Anda di sini untuk mode online. Kosongkan untuk mode Offline/Demo (Data disimpan di browser).</p>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Google Apps Script URL (API)</label>
-                                <input type="url" id="set-api" class="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm" placeholder="https://script.google.com/macros/s/.../exec">
-                            </div>
-
-                            <div class="pt-4 border-t border-slate-100">
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition w-full md:w-auto">
+                            <div class="pt-4 border-t border-slate-100 flex flex-col md:flex-row gap-2 md:gap-3">
+                                <button type="submit" class="w-full md:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition">
                                     Simpan Pengaturan
                                 </button>
-                                <button type="button" onclick="factoryReset()" class="mt-4 md:mt-0 md:ml-2 bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-lg font-medium transition w-full md:w-auto">
+                                <button type="button" onclick="factoryReset()" class="w-full md:w-auto bg-red-100 text-red-600 hover:bg-red-200 px-6 py-2 rounded-lg font-medium transition">
                                     Reset Data (Demo)
                                 </button>
                             </div>
@@ -558,6 +575,31 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Mobile Bottom Nav (Sticky Menu untuk Handphone) -->
+            <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-[100] pb-safe flex justify-around items-center px-1 py-1">
+                <button onclick="switchAdminTab('input')" class="flex flex-col items-center p-2 text-slate-500 hover:text-blue-600 admin-tab-btn-mobile w-1/5" data-target="input">
+                    <i class="fas fa-keyboard text-lg mb-1"></i>
+                    <span class="text-[10px] font-medium truncate w-full text-center leading-none">Input</span>
+                </button>
+                <button onclick="switchAdminTab('paslon')" class="flex flex-col items-center p-2 text-slate-500 hover:text-blue-600 admin-tab-btn-mobile w-1/5" data-target="paslon">
+                    <i class="fas fa-users text-lg mb-1"></i>
+                    <span class="text-[10px] font-medium truncate w-full text-center leading-none">Paslon</span>
+                </button>
+                <button onclick="switchAdminTab('wilayah')" class="flex flex-col items-center p-2 text-slate-500 hover:text-blue-600 admin-tab-btn-mobile w-1/5" data-target="wilayah">
+                    <i class="fas fa-map-marked-alt text-lg mb-1"></i>
+                    <span class="text-[10px] font-medium truncate w-full text-center leading-none">Wilayah</span>
+                </button>
+                <button onclick="switchAdminTab('pengaturan')" class="flex flex-col items-center p-2 text-slate-500 hover:text-blue-600 admin-tab-btn-mobile w-1/5" data-target="pengaturan">
+                    <i class="fas fa-cog text-lg mb-1"></i>
+                    <span class="text-[10px] font-medium truncate w-full text-center leading-none">Setting</span>
+                </button>
+                <button onclick="logout()" class="flex flex-col items-center p-2 text-red-500 hover:text-red-700 w-1/5">
+                    <i class="fas fa-sign-out-alt text-lg mb-1"></i>
+                    <span class="text-[10px] font-medium truncate w-full text-center leading-none">Keluar</span>
+                </button>
+            </div>
+            
         </div>
     </template>
 
@@ -681,6 +723,11 @@
         let refreshInterval = null;
         let isOnline = false;
         let isAutoRefresh = true; // State Auto-refresh
+        
+        // State Filter dan Sortir untuk Tabel Data Suara
+        let dataSuaraSortBy = 'waktu';
+        let dataSuaraSortDesc = true;
+        let dataSuaraFilterText = '';
 
         /* ====================================================================
            2. CORE FUNCTIONS (Storage, API)
@@ -1217,41 +1264,52 @@
         function switchAdminTab(tabId) {
             // Hide all
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden'));
-            // Remove active classes
+            
+            // Remove active classes Desktop
             document.querySelectorAll('.admin-tab-btn').forEach(el => {
                 el.classList.remove('bg-blue-50', 'text-blue-700');
                 el.classList.add('text-slate-600');
             });
+            // Remove active classes Mobile
+            document.querySelectorAll('.admin-tab-btn-mobile').forEach(el => {
+                el.classList.remove('text-blue-600');
+                el.classList.add('text-slate-500');
+            });
             
             // Show target
             document.getElementById('tab-' + tabId).classList.remove('hidden');
-            // Add active class
-            let btn = document.querySelector(`.admin-tab-btn[data-target="${tabId}"]`);
-            if(btn) {
-                btn.classList.remove('text-slate-600');
-                btn.classList.add('bg-blue-50', 'text-blue-700');
+            
+            // Add active class Desktop
+            let btnDesktop = document.querySelector(`.admin-tab-btn[data-target="${tabId}"]`);
+            if(btnDesktop) {
+                btnDesktop.classList.remove('text-slate-600');
+                btnDesktop.classList.add('bg-blue-50', 'text-blue-700');
+            }
+            
+            // Add active class Mobile
+            let btnMobile = document.querySelector(`.admin-tab-btn-mobile[data-target="${tabId}"]`);
+            if(btnMobile) {
+                btnMobile.classList.remove('text-slate-500');
+                btnMobile.classList.add('text-blue-600');
             }
         }
 
         function updateAdminUI() {
-            // Connection Indicator
-            const ind = document.getElementById('conn-indicator');
-            const txt = document.getElementById('conn-text');
-            if (isOnline) {
-                ind.className = 'w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse';
-                txt.innerText = 'Online (Connected to GAS)';
-            } else {
-                ind.className = 'w-2.5 h-2.5 rounded-full bg-amber-400';
-                txt.innerText = 'Offline Mode (Local Storage)';
-            }
-
-            // 1. Populate Input Form
+            // 1. Populate Input Suara (Wilayah Dropdown)
             const selWilayah = document.getElementById('input-wilayah');
-            if(selWilayah) {
+            if (selWilayah) {
+                let currentVal = selWilayah.value;
                 selWilayah.innerHTML = '<option value="">-- Pilih Wilayah --</option>';
+                
                 appData.wilayah.forEach(w => {
-                    selWilayah.innerHTML += `<option value="${w.id}">${w.nama}</option>`;
+                    let kab = w.kabupaten ? w.kabupaten : '';
+                    let kec = w.kecamatan ? w.kecamatan : '';
+                    let kel = w.kelurahan ? w.kelurahan : w.nama;
+                    let display = `${kel} - Kec. ${kec} (${kab})`;
+                    selWilayah.innerHTML += `<option value="${w.id}">${display}</option>`;
                 });
+                
+                if(currentVal) selWilayah.value = currentVal;
                 
                 // Tambahkan event onchange agar saat wilayah dipilih, list TPS di sebelahnya ikut diperbarui
                 selWilayah.setAttribute('onchange', 'populateTPSDropdown()');
@@ -1278,36 +1336,8 @@
                 });
             }
 
-            // Data Suara Table
-            const tbodyR = document.getElementById('table-recent-suara');
-            if(tbodyR) {
-                tbodyR.innerHTML = '';
-                // Get all data, sorted by time descending (no more slice limitation)
-                let sortedSuara = [...appData.suara].sort((a,b) => new Date(b.waktu) - new Date(a.waktu));
-                sortedSuara.forEach(s => {
-                    let wNama = appData.wilayah.find(w => w.id === s.wilayah)?.nama || 'Unknown';
-                    let total = 0;
-                    appData.paslon.forEach(p => total += (parseInt(s["suara_"+p.nomor]) || 0));
-                    let d = new Date(s.waktu);
-                    let tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 transition";
-                    tr.innerHTML = `
-                        <td class="py-2 px-3 text-center"><input type="checkbox" class="suara-checkbox rounded text-blue-600 cursor-pointer" value="${s.id}" onchange="updateBulkDeleteSuaraBtn()"></td>
-                        <td class="py-2 px-3 text-xs text-slate-500">${d.toLocaleDateString('id-ID')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}</td>
-                        <td class="py-2 px-3"><span class="font-medium">${wNama}</span> / TPS ${s.tps}</td>
-                        <td class="py-2 px-3 font-semibold text-blue-600">${total}</td>
-                        <td class="py-2 px-3 text-right whitespace-nowrap">
-                            <button type="button" onclick="editSuara('${s.id}')" class="text-amber-500 hover:text-amber-700 p-1 mr-1"><i class="fas fa-edit text-xs"></i></button>
-                            <button type="button" onclick="deleteSuara('${s.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt text-xs"></i></button>
-                        </td>
-                    `;
-                    tbodyR.appendChild(tr);
-                });
-
-                const selectAllSuara = document.getElementById('selectAllSuara');
-                if (selectAllSuara) selectAllSuara.checked = false;
-                if (typeof updateBulkDeleteSuaraBtn === 'function') updateBulkDeleteSuaraBtn();
-            }
+            // Data Suara Table (Dirender dengan filter dan sortir)
+            renderDataSuaraTable();
 
             // 2. Populate Pengaturan
             if(document.getElementById('set-judul')) {
@@ -1412,6 +1442,113 @@
                     tpsSelect.innerHTML += `<option value="01">TPS 01</option>`;
                 }
             }
+        }
+
+        // Logic Filter & Sortir Tabel Data Suara
+        function handleFilterDataSuara(e) {
+            dataSuaraFilterText = e.target.value.toLowerCase();
+            renderDataSuaraTable();
+        }
+
+        function sortDataSuara(col) {
+            if (dataSuaraSortBy === col) {
+                dataSuaraSortDesc = !dataSuaraSortDesc; // Toggle arah sortir jika kolom sama
+            } else {
+                dataSuaraSortBy = col;
+                dataSuaraSortDesc = false; // Default Ascending untuk kolom baru
+            }
+            renderDataSuaraTable();
+        }
+
+        function renderDataSuaraTable() {
+            const tbodyR = document.getElementById('table-recent-suara');
+            if (!tbodyR) return;
+
+            // Reset UI Sort Icon
+            document.querySelectorAll('.sort-icon').forEach(icon => {
+                icon.className = 'fas fa-sort text-[10px] ml-1 text-slate-400 sort-icon';
+            });
+            const activeIcon = document.querySelector(`.sort-icon[data-col="${dataSuaraSortBy}"]`);
+            if (activeIcon) {
+                activeIcon.className = `fas fa-sort-${dataSuaraSortDesc ? 'down' : 'up'} text-[10px] ml-1 text-blue-600 sort-icon`;
+            }
+
+            // 1. Mapping data & menggabungkan info wilayah
+            let mappedData = appData.suara.map(s => {
+                let w = appData.wilayah.find(wx => wx.id === s.wilayah) || {};
+                let totalSah = 0;
+                appData.paslon.forEach(p => totalSah += (parseInt(s["suara_" + p.nomor]) || 0));
+                
+                return {
+                    ...s,
+                    _kab: w.kabupaten || '-',
+                    _kec: w.kecamatan || '-',
+                    _kel: w.kelurahan || w.nama || '-',
+                    _totalSah: totalSah,
+                    _tidakSah: parseInt(s.suara_tidak_sah) || 0,
+                    _dpt: parseInt(s.total_pemilih) || 0,
+                    _waktuObj: new Date(s.waktu)
+                };
+            });
+
+            // 2. Filter (Pencarian)
+            if (dataSuaraFilterText) {
+                mappedData = mappedData.filter(d => 
+                    d._kab.toLowerCase().includes(dataSuaraFilterText) ||
+                    d._kec.toLowerCase().includes(dataSuaraFilterText) ||
+                    d._kel.toLowerCase().includes(dataSuaraFilterText) ||
+                    String(d.tps).toLowerCase().includes(dataSuaraFilterText)
+                );
+            }
+
+            // 3. Sortir
+            mappedData.sort((a, b) => {
+                let valA, valB;
+                switch (dataSuaraSortBy) {
+                    case 'waktu': valA = a._waktuObj.getTime(); valB = b._waktuObj.getTime(); break;
+                    case 'kab': valA = a._kab.toLowerCase(); valB = b._kab.toLowerCase(); break;
+                    case 'kec': valA = a._kec.toLowerCase(); valB = b._kec.toLowerCase(); break;
+                    case 'kel': valA = a._kel.toLowerCase(); valB = b._kel.toLowerCase(); break;
+                    case 'tps': valA = parseInt(a.tps) || 0; valB = parseInt(b.tps) || 0; break;
+                    case 'sah': valA = a._totalSah; valB = b._totalSah; break;
+                    case 'tidaksah': valA = a._tidakSah; valB = b._tidakSah; break;
+                    case 'dpt': valA = a._dpt; valB = b._dpt; break;
+                    default: valA = a._waktuObj.getTime(); valB = b._waktuObj.getTime();
+                }
+
+                if (valA < valB) return dataSuaraSortDesc ? 1 : -1;
+                if (valA > valB) return dataSuaraSortDesc ? -1 : 1;
+                return 0;
+            });
+
+            // 4. Render ke HTML
+            tbodyR.innerHTML = '';
+            mappedData.forEach(s => {
+                let d = s._waktuObj;
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="py-2 px-3 text-center"><input type="checkbox" class="suara-checkbox rounded text-blue-600 cursor-pointer" value="${s.id}" onchange="updateBulkDeleteSuaraBtn()"></td>
+                    <td class="py-2 px-3 text-xs text-slate-500 whitespace-nowrap">${d.toLocaleDateString('id-ID')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}</td>
+                    <td class="py-2 px-3 max-w-[120px] truncate" title="${s._kab}">${s._kab}</td>
+                    <td class="py-2 px-3 max-w-[120px] truncate" title="${s._kec}">${s._kec}</td>
+                    <td class="py-2 px-3 max-w-[120px] truncate font-medium text-slate-700" title="${s._kel}">${s._kel}</td>
+                    <td class="py-2 px-3 text-center font-bold">TPS ${s.tps}</td>
+                    <td class="py-2 px-3 text-right font-semibold text-blue-600">${s._totalSah}</td>
+                    <td class="py-2 px-3 text-right text-slate-500">${s._tidakSah}</td>
+                    <td class="py-2 px-3 text-right font-medium text-slate-700">${s._dpt}</td>
+                    <td class="py-2 px-3 text-right whitespace-nowrap">
+                        <button type="button" onclick="editSuara('${s.id}')" class="text-amber-500 hover:text-amber-700 p-1 mr-1"><i class="fas fa-edit text-xs"></i></button>
+                        <button type="button" onclick="deleteSuara('${s.id}')" class="text-red-500 hover:text-red-700 p-1"><i class="fas fa-trash-alt text-xs"></i></button>
+                    </td>
+                `;
+                tbodyR.appendChild(tr);
+            });
+
+            // Reset state checkbox pilih semua
+            const selectAllSuara = document.getElementById('selectAllSuara');
+            if (selectAllSuara) selectAllSuara.checked = false;
+            if (typeof updateBulkDeleteSuaraBtn === 'function') updateBulkDeleteSuaraBtn();
         }
 
         // Actions
